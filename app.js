@@ -477,6 +477,9 @@ function showOtpForm(email) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('otp-email-display').textContent = email;
   document.getElementById('otp-code').value = '';
+  // Scroll modal to top in case it scrolled during form filling
+  const modal = document.querySelector('.auth-modal');
+  if (modal) modal.scrollTop = 0;
   startOtpCooldown(60);
 }
 
@@ -570,17 +573,30 @@ async function requestOtp(email, profileData = null) {
       };
     }
 
-    const { error } = await supabaseClient.auth.signInWithOtp({
+    const { data, error } = await supabaseClient.auth.signInWithOtp({
       email,
       options,
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('[Supabase signInWithOtp error]', error);
+      // Friendly messages for common cases
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('signups not allowed') || msg.includes('signup_disabled')) {
+        showToast('New signups are currently disabled. Contact support.', 'error');
+      } else if (msg.includes('rate limit') || msg.includes('email rate')) {
+        showToast('Too many attempts. Please wait a minute and try again.', 'error');
+      } else {
+        showToast(error.message || 'Could not send OTP. Please try again.', 'error');
+      }
+      return;
+    }
 
+    console.log('[Supabase signInWithOtp] OTP request sent to', email);
     showOtpForm(email);
     showToast('Check your email for the 6-digit code.', 'success');
   } catch (err) {
-    console.error('OTP request failed:', err);
+    console.error('[OTP request exception]', err);
     showToast(err.message || 'Could not send OTP. Please try again.', 'error');
   }
 }

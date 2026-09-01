@@ -1343,6 +1343,8 @@ input, select, textarea {
 .auth-modal {
   width: 440px;
   max-width: calc(100% - var(--sp-8));
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--clr-bg-secondary);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-xl);
