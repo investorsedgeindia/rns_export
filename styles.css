@@ -7,43 +7,43 @@
 
 /* ── Design Tokens ── */
 :root {
-  /* Colors — warm luxury palette */
-  --clr-bg-primary:    #0a0a0a;
-  --clr-bg-secondary:  #131313;
-  --clr-bg-card:       #1a1a1a;
-  --clr-bg-elevated:   #222222;
-  --clr-bg-glass:      rgba(26, 26, 26, 0.65);
+  /* Colors — pearl white / skin white palette */
+  --clr-bg-primary:    #faf6f0;   /* pearl white — main page background */
+  --clr-bg-secondary:  #f3ece1;   /* warm skin beige — secondary surfaces */
+  --clr-bg-card:       #ffffff;   /* pure white — cards */
+  --clr-bg-elevated:   #ffffff;   /* white — elevated surfaces (modals, navbar on scroll) */
+  --clr-bg-glass:      rgba(255, 255, 255, 0.78);  /* translucent white for glass effects */
 
-  --clr-gold-50:       #fff9e6;
-  --clr-gold-100:      #fff0b3;
-  --clr-gold-200:      #ffe680;
-  --clr-gold-300:      #ffd94d;
-  --clr-gold-400:      #ffcc1a;
-  --clr-gold:          #d4a843;
-  --clr-gold-dark:     #b8922e;
+  --clr-gold-50:       #fdf8ec;
+  --clr-gold-100:      #f9ecc8;
+  --clr-gold-200:      #f1d99a;
+  --clr-gold-300:      #e6c069;
+  --clr-gold-400:      #d4a843;
+  --clr-gold:          #b8922e;   /* warm gold accent */
+  --clr-gold-dark:     #8c6e1f;
   --clr-amber:         #c78d20;
 
-  --clr-text-primary:  #f5f0e8;
-  --clr-text-secondary:#b0a898;
-  --clr-text-muted:    #7a7268;
-  --clr-text-inverse:  #0a0a0a;
+  --clr-text-primary:  #2b2419;   /* deep warm brown — main text on light bg */
+  --clr-text-secondary:#6b5e4d;   /* medium warm brown — secondary text */
+  --clr-text-muted:    #9a8e7c;   /* soft taupe — muted/placeholder text */
+  --clr-text-inverse:  #faf6f0;   /* pearl white — text on gold/dark buttons */
 
-  --clr-accent:        #c78d20;
-  --clr-accent-light:  #e8b44f;
-  --clr-success:       #4ade80;
-  --clr-error:         #ef4444;
-  --clr-warning:       #fbbf24;
+  --clr-accent:        #b8922e;   /* warm gold — primary accent */
+  --clr-accent-light:  #d4a843;
+  --clr-success:       #2f9e5a;
+  --clr-error:         #c0392b;
+  --clr-warning:       #d49a1a;
 
-  --clr-border:        rgba(212, 168, 67, 0.12);
-  --clr-border-hover:  rgba(212, 168, 67, 0.3);
-  --clr-overlay:       rgba(0, 0, 0, 0.7);
+  --clr-border:        rgba(184, 146, 46, 0.18);   /* soft gold-tinted border */
+  --clr-border-hover:  rgba(184, 146, 46, 0.45);
+  --clr-overlay:       rgba(43, 36, 25, 0.45);    /* warm dark overlay (not black) */
 
   /* Gradients */
-  --grad-gold:         linear-gradient(135deg, #d4a843, #e8b44f, #c78d20);
-  --grad-dark:         linear-gradient(180deg, #0a0a0a 0%, #131313 100%);
-  --grad-card:         linear-gradient(145deg, #1e1e1e, #151515);
-  --grad-hero:         linear-gradient(135deg, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.4) 50%, rgba(10,10,10,0.85) 100%);
-  --grad-shimmer:      linear-gradient(90deg, transparent 0%, rgba(212,168,67,0.08) 50%, transparent 100%);
+  --grad-gold:         linear-gradient(135deg, #d4a843, #e8b44f, #b8922e);
+  --grad-warm:         linear-gradient(180deg, #faf6f0 0%, #f3ece1 100%);
+  --grad-card:         linear-gradient(145deg, #ffffff, #fbf7f0);
+  --grad-hero:         linear-gradient(135deg, rgba(250,246,240,0.85) 0%, rgba(250,246,240,0.55) 50%, rgba(250,246,240,0.85) 100%);
+  --grad-shimmer:      linear-gradient(90deg, transparent 0%, rgba(184,146,46,0.10) 50%, transparent 100%);
 
   /* Typography */
   --font-display:      'Playfair Display', Georgia, serif;
@@ -382,14 +382,14 @@ input, select, textarea {
   align-items: center;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-4);
-  background: rgba(212, 168, 67, 0.1);
-  border: 1px solid rgba(212, 168, 67, 0.25);
+  background: rgba(184, 146, 46, 0.10);
+  border: 1px solid rgba(184, 146, 46, 0.30);
   border-radius: var(--radius-full);
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--clr-gold);
+  color: var(--clr-gold-dark);
   margin-bottom: var(--sp-6);
 }
 
