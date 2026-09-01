@@ -1,0 +1,47 @@
+# =============================================================
+# NutLux — .gitignore
+# =============================================================
+
+# ── Secrets / runtime config ──
+# Local config with real Supabase keys. The template (config.example.js)
+# is committed instead — copy it to config.js for local development.
+config.js
+
+# Common secret / env file patterns (in case we add them later)
+.env
+.env.*
+!.env.example
+
+# ── Node / build artifacts (future-proofing) ──
+node_modules/
+dist/
+build/
+.vite/
+.parcel-cache/
+.next/
+.nuxt/
+.cache/
+
+# ── Logs ──
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ── OS / editor junk ──
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Test / coverage ──coverage/
+.nyc_output/
+
+# ── Misc ──
+*.local
+.history/

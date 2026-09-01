@@ -3,8 +3,18 @@
    ============================================ */
 
 // ── Supabase Configuration ──
-const SUPABASE_URL = 'https://lvzmkbgduelpngjnsgdu.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_SL7u7u9ZVCno6e43CovGkA_YUgD5Px1';
+const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
+
+if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
+  console.error(
+    '[NutLux] Supabase config missing.\n' +
+    'Create a config.js file based on config.example.js with your real keys.\n' +
+    'See the README or config.example.js for instructions.'
+  );
+}
+
+const SUPABASE_URL = SUPABASE_CONFIG.url;
+const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
 
 if (!window.supabase) {
   console.error('Supabase SDK failed to load. Check your network connection.');
