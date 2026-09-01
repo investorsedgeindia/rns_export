@@ -47,41 +47,9 @@ const PRODUCTS = [
   },
 ];
 
-const TESTIMONIALS = [
-  {
-    name: 'Priya Sharma',
-    title: 'Verified Buyer',
-    text: '"The cashews are incredibly fresh and crunchy. Best quality I\'ve ever had! The packaging is also very premium — perfect for gifting."',
-    rating: 5,
-  },
-  {
-    name: 'Rajesh Kumar',
-    title: 'Regular Customer',
-    text: '"Been ordering from NutLux for 6 months now. The almonds are consistently top-notch. Delivery is always on time. Highly recommend!"',
-    rating: 5,
-  },
-  {
-    name: 'Ananya Patel',
-    title: 'Verified Buyer',
-    text: '"The honey glazed cashews are to die for! Such a unique and delicious flavor. My whole family loves them."',
-    rating: 5,
-  },
-  {
-    name: 'Vikram Singh',
-    title: 'Gift Buyer',
-    text: '"Ordered the Royal Gift Box for Diwali. The presentation was stunning and the quality exceeded expectations. Will order again!"',
-    rating: 5,
-  },
-  {
-    name: 'Meera Desai',
-    title: 'Health Enthusiast',
-    text: '"As a nutritionist, I\'m very particular about quality. NutLux almonds are genuinely premium — no additives, just pure goodness."',
-    rating: 4,
-  },
-];
-
 // ── State ──
 let cart = [];
+let showcaseQty = 1;
 let isLoggedIn = false;
 let currentUser = null;
 let pendingProfile = null; // { name, phone } saved between register & OTP verify
@@ -112,8 +80,6 @@ function sanitizeText(str, max = 500) {
 
 // ── Initialization ──
 document.addEventListener('DOMContentLoaded', async () => {
-  renderProducts('all');
-  renderTestimonials();
   initScrollAnimations();
   initNavbarScroll();
   initSmoothScroll();
@@ -187,52 +153,7 @@ async function loadCurrentUser(userId) {
   }
 }
 
-// ── Render Products ──
-function renderProducts(filter) {
-  const grid = document.getElementById('products-grid');
-  const filtered = filter === 'all'
-    ? PRODUCTS
-    : PRODUCTS.filter(p => p.category === filter);
-
-  grid.innerHTML = filtered.map((p, i) => `
-    <div class="product-card reveal reveal-delay-${(i % 4) + 1}" data-category="${escapeHtml(p.category)}">
-      ${p.badge ? `<span class="product-card-badge ${escapeHtml(p.badge)}">${escapeHtml(p.badge)}</span>` : ''}
-      <div class="product-card-img">
-        <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" />
-        <div class="product-card-overlay">
-          <button class="btn-icon" title="Quick View" onclick="showToast('Quick view coming soon!', 'info')">👁</button>
-          <button class="btn-icon" title="Add to Wishlist" onclick="showToast('Added to wishlist!', 'success')">♡</button>
-          <button class="btn-icon" title="Add to Cart" onclick="addToCart(${Number(p.id)})">🛒</button>
-        </div>
-      </div>
-      <div class="product-card-body">
-        <div class="product-card-category">${escapeHtml(p.category)}</div>
-        <h3 class="product-card-title">${escapeHtml(p.name)}</h3>
-        <div class="product-card-weight">${escapeHtml(p.weight)}</div>
-        <div class="product-card-rating">
-          <div class="product-card-stars">${renderStars(p.rating)}</div>
-          <span class="product-card-rating-count">(${p.reviews})</span>
-        </div>
-        <div class="product-card-footer">
-          <div class="product-card-price">
-            <span class="current">₹${Number(p.price).toLocaleString('en-IN')}</span>
-            ${p.originalPrice ? `<span class="original">₹${Number(p.originalPrice).toLocaleString('en-IN')}</span>` : ''}
-          </div>
-          <button class="add-to-cart-btn" id="atc-btn-${Number(p.id)}" onclick="addToCart(${Number(p.id)})">
-            <span>+</span> Add
-          </button>
-        </div>
-      </div>
-    </div>
-  `).join('');
-
-  setTimeout(() => {
-    document.querySelectorAll('.product-card.reveal').forEach(el => {
-      observerInstance.observe(el);
-    });
-  }, 50);
-}
-
+// ── Star rating helper (still used in testimonials if ever needed) ──
 function renderStars(rating) {
   const full = Math.floor(rating);
   const half = rating % 1 >= 0.5;
@@ -243,29 +164,35 @@ function renderStars(rating) {
   return stars;
 }
 
-// ── Filter Products ──
-function filterProducts(filter, btn) {
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  renderProducts(filter);
+// ── Showcase quantity controls ──
+function changeShowcaseQty(delta) {
+  showcaseQty = Math.max(1, Math.min(99, showcaseQty + delta));
+  const el = document.getElementById('showcase-qty');
+  if (el) el.textContent = String(showcaseQty);
 }
 
-// ── Render Testimonials ──
-function renderTestimonials() {
-  const track = document.getElementById('testimonials-track');
-  track.innerHTML = TESTIMONIALS.map(t => `
-    <div class="testimonial-card">
-      <div class="testimonial-stars">${'★'.repeat(Number(t.rating))}${'☆'.repeat(5 - Number(t.rating))}</div>
-      <p class="testimonial-text">${escapeHtml(t.text)}</p>
-      <div class="testimonial-author">
-        <div class="testimonial-avatar">${escapeHtml(t.name.charAt(0))}</div>
-        <div>
-          <div class="testimonial-author-name">${escapeHtml(t.name)}</div>
-          <div class="testimonial-author-title">${escapeHtml(t.title)}</div>
-        </div>
-      </div>
-    </div>
-  `).join('');
+function addShowcaseToCart() {
+  const product = PRODUCTS[0];
+  if (!product) return;
+  const existing = cart.find(item => item.id === product.id);
+  const addQty = showcaseQty;
+  if (existing) {
+    existing.qty = Math.min(99, existing.qty + addQty);
+  } else {
+    cart.push({ ...product, qty: addQty });
+  }
+  showcaseQty = 1;
+  const el = document.getElementById('showcase-qty');
+  if (el) el.textContent = '1';
+  updateCartUI();
+  showToast(`${product.name} × ${addQty} added to cart!`, 'success');
+  // Mini animation feedback
+  const btn = document.querySelector('.showcase-add-btn');
+  if (btn) {
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ Added';
+    setTimeout(() => { btn.innerHTML = original; }, 1200);
+  }
 }
 
 // ── Cart Functions ──
@@ -281,10 +208,9 @@ function addToCart(productId) {
     cart.push({ ...product, qty: 1 });
   }
 
-  // Cap quantity to prevent abuse
-  if (cart.find(i => i.id === id).qty > 99) {
-    cart.find(i => i.id === id).qty = 99;
-  }
+  // Sync the showcase quantity display if present
+  const showcaseQty = document.getElementById('showcase-qty');
+  if (showcaseQty) showcaseQty.textContent = String(existing ? existing.qty : 1);
 
   updateCartUI();
   showToast(`${product.name} added to cart!`, 'success');
@@ -894,7 +820,7 @@ function initNavbarScroll() {
 }
 
 function updateActiveNav() {
-  const sections = ['home', 'catalogue', 'about', 'testimonials', 'orders'];
+  const sections = ['home', 'orders'];
   const scrollPos = window.scrollY + 120;
 
   sections.forEach(id => {

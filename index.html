@@ -20,9 +20,6 @@
 
       <ul class="nav-links" id="nav-links">
         <li><a href="#home" class="nav-link active" data-nav="home">Home</a></li>
-        <li><a href="#catalogue" class="nav-link" data-nav="catalogue">Catalogue</a></li>
-        <li><a href="#about" class="nav-link" data-nav="about">Why Us</a></li>
-        <li><a href="#testimonials" class="nav-link" data-nav="testimonials">Reviews</a></li>
         <li><a href="#orders" class="nav-link" data-nav="orders" id="nav-orders">My Orders</a></li>
       </ul>
 
@@ -44,17 +41,17 @@
     </div>
   </nav>
 
-  <!-- ═══════ HERO SECTION ═══════ -->
+  <!-- ═══════ HERO + PRODUCT SHOWCASE ═══════ -->
   <section class="hero" id="home">
     <div class="hero-bg">
-      <img src="images/hero_banner.jpg" alt="Premium cashews and almonds artfully displayed" />
+      <img src="images/cashew_hero.jpg" alt="Premium plain whole cashew nuts" />
     </div>
     <div class="hero-overlay"></div>
     <div class="container">
       <div class="hero-content">
         <div class="hero-badge">
           <span class="hero-badge-dot"></span>
-          Freshly Harvested · 2024 Collection
+          100% Natural · Nothing Added
         </div>
         <h1>
           Pure &amp; Simple<br />
@@ -64,96 +61,40 @@
           Just one product, done right — premium whole cashew nuts, nothing added, nothing taken away. 
           Handpicked, sorted, and packed fresh from the farm to your doorstep.
         </p>
-        <div class="hero-cta">
-          <a href="#catalogue" class="btn btn-primary btn-lg">Shop Collection</a>
-          <a href="#about" class="btn btn-secondary btn-lg">Our Story</a>
-        </div>
-        <div class="hero-stats">
-          <div>
-            <div class="hero-stat-value">15K+</div>
-            <div class="hero-stat-label">Happy Customers</div>
+
+        <!-- Product Showcase Card -->
+        <div class="product-showcase">
+          <div class="product-showcase-img">
+            <img src="images/cashew_hero.jpg" alt="Plain Whole Cashews — 1kg pack" />
           </div>
-          <div>
-            <div class="hero-stat-value">100%</div>
-            <div class="hero-stat-label">Natural &amp; Pure</div>
+          <div class="product-showcase-info">
+            <div class="product-showcase-category">Cashews</div>
+            <h2 class="product-showcase-title">Plain Whole Cashews</h2>
+            <p class="product-showcase-desc">
+              Pure whole cashew nuts — no salt, no glaze, no roasting. Just clean, natural, premium-grade cashews the way nature made them.
+            </p>
+            <div class="product-showcase-meta">
+              <span class="meta-item">Net weight: <strong>1 kg</strong></span>
+              <span class="meta-divider">·</span>
+              <span class="meta-item">Grade: <strong>W240</strong></span>
+            </div>
+            <div class="product-showcase-price">
+              <span class="price-currency">₹</span>
+              <span class="price-value">900</span>
+              <span class="price-unit">/ kg</span>
+            </div>
+            <div class="product-showcase-actions">
+              <div class="qty-control qty-control-lg">
+                <button class="qty-btn" onclick="changeShowcaseQty(-1)" aria-label="Decrease quantity">−</button>
+                <span class="qty-value" id="showcase-qty">1</span>
+                <button class="qty-btn" onclick="changeShowcaseQty(1)" aria-label="Increase quantity">+</button>
+              </div>
+              <button class="btn btn-primary btn-lg showcase-add-btn" onclick="addShowcaseToCart()">
+                🛒 Add to Cart
+              </button>
+            </div>
           </div>
-          <div>
-            <div class="hero-stat-value">24hr</div>
-            <div class="hero-stat-label">Fast Delivery</div>
-          </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════ CATALOGUE SECTION ═══════ -->
-  <section class="section" id="catalogue" style="position:relative; overflow:hidden;">
-    <div class="bg-glow gold" style="top:-200px; right:-100px;"></div>
-    <div class="container">
-      <div class="section-header reveal">
-        <div class="section-label">Our Collection</div>
-        <h2 class="section-title">Premium Catalogue</h2>
-        <p class="section-subtitle">Explore our curated selection of the finest cashews and almonds, sourced directly from trusted farms</p>
-      </div>
-
-      <div class="catalogue-filters reveal">
-        <button class="filter-btn active" data-filter="all" onclick="filterProducts('all', this)">All Products</button>
-        <button class="filter-btn" data-filter="cashew" onclick="filterProducts('cashew', this)">Cashews</button>
-      </div>
-
-      <div class="products-grid" id="products-grid">
-        <!-- Products rendered by JS -->
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════ FEATURES / WHY US ═══════ -->
-  <section class="section" id="about" style="position:relative; overflow:hidden;">
-    <div class="bg-glow amber" style="bottom:-200px; left:-100px;"></div>
-    <div class="container">
-      <div class="section-header reveal">
-        <div class="section-label">Why Choose Us</div>
-        <h2 class="section-title">Crafted with Care</h2>
-        <p class="section-subtitle">Every nut tells a story of quality, passion, and commitment to excellence</p>
-      </div>
-
-      <div class="features-grid">
-        <div class="feature-card reveal reveal-delay-1">
-          <div class="feature-icon">🌱</div>
-          <h3 class="feature-title">Farm Fresh</h3>
-          <p class="feature-desc">Sourced directly from organic farms, ensuring the freshest nuts reach your table with maximum nutritional value.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-2">
-          <div class="feature-icon">🔥</div>
-          <h3 class="feature-title">Perfectly Roasted</h3>
-          <p class="feature-desc">Slow-roasted at optimal temperatures to bring out the rich, natural flavors without any artificial additives.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-3">
-          <div class="feature-icon">📦</div>
-          <h3 class="feature-title">Sealed Fresh</h3>
-          <p class="feature-desc">Vacuum-sealed in premium packaging to lock in freshness and crunch, from our facility to your doorstep.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-4">
-          <div class="feature-icon">🚚</div>
-          <h3 class="feature-title">Swift Delivery</h3>
-          <p class="feature-desc">Free express shipping on all orders. Track your package in real-time and enjoy doorstep delivery within 24 hours.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════ TESTIMONIALS ═══════ -->
-  <section class="section" id="testimonials" style="position:relative; overflow:hidden;">
-    <div class="bg-glow gold" style="top:-100px; left:50%; transform:translateX(-50%);"></div>
-    <div class="container">
-      <div class="section-header reveal">
-        <div class="section-label">Customer Love</div>
-        <h2 class="section-title">What People Say</h2>
-        <p class="section-subtitle">Join thousands of happy customers who trust NutLux for their premium dry fruit needs</p>
-      </div>
-
-      <div class="testimonials-track reveal" id="testimonials-track">
-        <!-- Testimonials rendered by JS -->
       </div>
     </div>
   </section>
@@ -216,9 +157,8 @@
 <div>
             <h4 class="footer-col-title">Quick Links</h4>
             <ul class="footer-links">
-              <li><a href="#catalogue">All Products</a></li>
-              <li><a href="#catalogue">Cashews</a></li>
-              <li><a href="#about">About Us</a></li>
+              <li><a href="#home">Home</a></li>
+              <li><a href="#orders">My Orders</a></li>
             </ul>
           </div>
 

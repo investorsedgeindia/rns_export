@@ -42,7 +42,7 @@
   --grad-gold:         linear-gradient(135deg, #d4a843, #e8b44f, #b8922e);
   --grad-warm:         linear-gradient(180deg, #faf6f0 0%, #f3ece1 100%);
   --grad-card:         linear-gradient(145deg, #ffffff, #fbf7f0);
-  --grad-hero:         linear-gradient(135deg, rgba(250,246,240,0.85) 0%, rgba(250,246,240,0.55) 50%, rgba(250,246,240,0.85) 100%);
+  --grad-hero:         linear-gradient(135deg, rgba(250,246,240,0.92) 0%, rgba(250,246,240,0.65) 45%, rgba(250,246,240,0.85) 100%);
   --grad-shimmer:      linear-gradient(90deg, transparent 0%, rgba(184,146,46,0.10) 50%, transparent 100%);
 
   /* Typography */
@@ -519,6 +519,174 @@ input, select, textarea {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   margin-top: var(--sp-2);
+}
+
+/* ============================================
+   PRODUCT SHOWCASE (Hero card)
+   ============================================ */
+.product-showcase {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(280px, 1.2fr);
+  gap: var(--sp-12);
+  align-items: center;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-xl);
+  padding: var(--sp-10);
+  margin-top: var(--sp-12);
+  box-shadow: 0 20px 60px -20px rgba(43, 36, 25, 0.18),
+              0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+  animation: fadeSlideUp 1s var(--ease-out) 0.6s both;
+}
+
+.product-showcase-img {
+  position: relative;
+  background: var(--grad-warm);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-8);
+}
+
+.product-showcase-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 24px rgba(43, 36, 25, 0.15));
+  transition: transform var(--dur-slow) var(--ease-out);
+}
+
+.product-showcase:hover .product-showcase-img img {
+  transform: scale(1.04);
+}
+
+.product-showcase-info {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.product-showcase-category {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--clr-gold-dark);
+}
+
+.product-showcase-title {
+  font-family: var(--font-display);
+  font-size: var(--fs-3xl);
+  font-weight: 700;
+  color: var(--clr-text-primary);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.product-showcase-desc {
+  font-size: var(--fs-base);
+  color: var(--clr-text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.product-showcase-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: var(--fs-sm);
+  color: var(--clr-text-secondary);
+  padding: var(--sp-3) 0;
+  border-top: 1px solid var(--clr-border);
+  border-bottom: 1px solid var(--clr-border);
+}
+
+.product-showcase-meta strong {
+  color: var(--clr-text-primary);
+  font-weight: 600;
+}
+
+.meta-divider {
+  color: var(--clr-text-muted);
+}
+
+.product-showcase-price {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+  font-family: var(--font-display);
+}
+
+.product-showcase-price .price-currency {
+  font-size: var(--fs-xl);
+  font-weight: 600;
+  color: var(--clr-gold-dark);
+}
+
+.product-showcase-price .price-value {
+  font-size: var(--fs-5xl);
+  font-weight: 700;
+  color: var(--clr-gold-dark);
+  line-height: 1;
+}
+
+.product-showcase-price .price-unit {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--clr-text-secondary);
+  margin-left: var(--sp-2);
+}
+
+.product-showcase-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.qty-control-lg {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--clr-border-hover);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  background: var(--clr-bg-primary);
+}
+
+.qty-control-lg .qty-btn {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--clr-text-primary);
+  background: transparent;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.qty-control-lg .qty-btn:hover {
+  background: rgba(184, 146, 46, 0.10);
+  color: var(--clr-gold-dark);
+}
+
+.qty-control-lg .qty-value {
+  min-width: 44px;
+  text-align: center;
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--clr-text-primary);
+}
+
+.showcase-add-btn {
+  flex: 1;
+  min-width: 200px;
 }
 
 /* ============================================
