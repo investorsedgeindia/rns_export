@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NutLux — Premium Cashews &amp; Almonds | Handpicked Luxury Dry Fruits</title>
+  <meta name="description" content="Discover NutLux's handpicked premium cashew nuts and almonds. Farm-fresh, expertly roasted, and delivered to your doorstep. Experience the finest quality dry fruits." />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥜</text></svg>" />
+</head>
+<body>
+
+  <!-- ═══════ NAVIGATION ═══════ -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="#" class="nav-brand" id="nav-brand">
+        <div class="nav-brand-icon">🥜</div>
+        <div class="nav-brand-text"><span>Nut</span>Lux</div>
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#home" class="nav-link active" data-nav="home">Home</a></li>
+        <li><a href="#catalogue" class="nav-link" data-nav="catalogue">Catalogue</a></li>
+        <li><a href="#about" class="nav-link" data-nav="about">Why Us</a></li>
+        <li><a href="#testimonials" class="nav-link" data-nav="testimonials">Reviews</a></li>
+        <li><a href="#orders" class="nav-link" data-nav="orders" id="nav-orders">My Orders</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="nav-action-btn" id="search-btn" aria-label="Search">
+          🔍
+        </button>
+        <button class="nav-action-btn" id="account-btn" aria-label="Account" onclick="openAuth()">
+          👤
+        </button>
+        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="openCart()">
+          🛒
+          <span class="badge" id="cart-badge">0</span>
+        </button>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" onclick="toggleMobileMenu()">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════ HERO SECTION ═══════ -->
+  <section class="hero" id="home">
+    <div class="hero-bg">
+      <img src="images/hero_banner.jpg" alt="Premium cashews and almonds artfully displayed" />
+    </div>
+    <div class="hero-overlay"></div>
+    <div class="container">
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="hero-badge-dot"></span>
+          Freshly Harvested · 2024 Collection
+        </div>
+        <h1>
+          Nature's Finest<br />
+          <span class="highlight">Premium Nuts</span>
+        </h1>
+        <p class="hero-description">
+          Handpicked from the world's finest orchards. Our cashews and almonds 
+          are expertly roasted, carefully packaged, and delivered fresh to your doorstep.
+        </p>
+        <div class="hero-cta">
+          <a href="#catalogue" class="btn btn-primary btn-lg">Shop Collection</a>
+          <a href="#about" class="btn btn-secondary btn-lg">Our Story</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-value">15K+</div>
+            <div class="hero-stat-label">Happy Customers</div>
+          </div>
+          <div>
+            <div class="hero-stat-value">100%</div>
+            <div class="hero-stat-label">Natural &amp; Pure</div>
+          </div>
+          <div>
+            <div class="hero-stat-value">24hr</div>
+            <div class="hero-stat-label">Fast Delivery</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ CATALOGUE SECTION ═══════ -->
+  <section class="section" id="catalogue" style="position:relative; overflow:hidden;">
+    <div class="bg-glow gold" style="top:-200px; right:-100px;"></div>
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Our Collection</div>
+        <h2 class="section-title">Premium Catalogue</h2>
+        <p class="section-subtitle">Explore our curated selection of the finest cashews and almonds, sourced directly from trusted farms</p>
+      </div>
+
+      <div class="catalogue-filters reveal">
+        <button class="filter-btn active" data-filter="all" onclick="filterProducts('all', this)">All Products</button>
+        <button class="filter-btn" data-filter="cashew" onclick="filterProducts('cashew', this)">Cashews</button>
+        <button class="filter-btn" data-filter="almond" onclick="filterProducts('almond', this)">Almonds</button>
+        <button class="filter-btn" data-filter="combo" onclick="filterProducts('combo', this)">Gift Combos</button>
+      </div>
+
+      <div class="products-grid" id="products-grid">
+        <!-- Products rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ FEATURES / WHY US ═══════ -->
+  <section class="section" id="about" style="position:relative; overflow:hidden;">
+    <div class="bg-glow amber" style="bottom:-200px; left:-100px;"></div>
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Why Choose Us</div>
+        <h2 class="section-title">Crafted with Care</h2>
+        <p class="section-subtitle">Every nut tells a story of quality, passion, and commitment to excellence</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon">🌱</div>
+          <h3 class="feature-title">Farm Fresh</h3>
+          <p class="feature-desc">Sourced directly from organic farms, ensuring the freshest nuts reach your table with maximum nutritional value.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon">🔥</div>
+          <h3 class="feature-title">Perfectly Roasted</h3>
+          <p class="feature-desc">Slow-roasted at optimal temperatures to bring out the rich, natural flavors without any artificial additives.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon">📦</div>
+          <h3 class="feature-title">Sealed Fresh</h3>
+          <p class="feature-desc">Vacuum-sealed in premium packaging to lock in freshness and crunch, from our facility to your doorstep.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-4">
+          <div class="feature-icon">🚚</div>
+          <h3 class="feature-title">Swift Delivery</h3>
+          <p class="feature-desc">Free express shipping on all orders. Track your package in real-time and enjoy doorstep delivery within 24 hours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ TESTIMONIALS ═══════ -->
+  <section class="section" id="testimonials" style="position:relative; overflow:hidden;">
+    <div class="bg-glow gold" style="top:-100px; left:50%; transform:translateX(-50%);"></div>
+    <div class="container">
+      <div class="section-header reveal">
+        <div class="section-label">Customer Love</div>
+        <h2 class="section-title">What People Say</h2>
+        <p class="section-subtitle">Join thousands of happy customers who trust NutLux for their premium dry fruit needs</p>
+      </div>
+
+      <div class="testimonials-track reveal" id="testimonials-track">
+        <!-- Testimonials rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ ORDER TRACKING SECTION ═══════ -->
+  <section class="section orders-section" id="orders">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Your Account</div>
+        <h2 class="section-title">Order Tracking</h2>
+        <p class="section-subtitle">Track the status of your orders and see your purchase history</p>
+      </div>
+
+      <div id="orders-logged-out" style="text-align:center;">
+        <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-6);">Please sign in to view your orders.</p>
+        <button class="btn btn-primary" onclick="openAuth()">Sign In</button>
+      </div>
+
+      <div class="orders-list" id="orders-list" style="display:none;">
+        <!-- Orders rendered by JS -->
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ CTA / NEWSLETTER ═══════ -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner reveal">
+        <h2>Get 15% Off Your First Order</h2>
+        <p>Subscribe to our newsletter for exclusive deals, new arrivals, and nutty recipes delivered to your inbox.</p>
+        <form class="cta-form" onsubmit="handleNewsletter(event)">
+          <input type="email" placeholder="Enter your email address" required id="newsletter-email" />
+          <button type="submit" class="btn btn-primary">Subscribe</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="#" class="nav-brand">
+            <div class="nav-brand-icon">🥜</div>
+            <div class="nav-brand-text"><span>Nut</span>Lux</div>
+          </a>
+          <p class="footer-brand-desc">
+            Premium cashews and almonds, handpicked from the finest orchards. 
+            Delivering nature's best to your doorstep since 2020.
+          </p>
+          <div class="footer-socials">
+            <a href="#" class="footer-social-link" aria-label="Facebook">f</a>
+            <a href="#" class="footer-social-link" aria-label="Instagram">📷</a>
+            <a href="#" class="footer-social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="footer-social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="#catalogue">All Products</a></li>
+            <li><a href="#catalogue">Cashews</a></li>
+            <li><a href="#catalogue">Almonds</a></li>
+            <li><a href="#catalogue">Gift Combos</a></li>
+            <li><a href="#about">About Us</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Support</h4>
+          <ul class="footer-links">
+            <li><a href="#">FAQs</a></li>
+            <li><a href="#">Shipping Info</a></li>
+            <li><a href="#">Returns</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="footer-col-title">Contact</h4>
+          <ul class="footer-links">
+            <li><a href="mailto:hello@nutlux.com">hello@nutlux.com</a></li>
+            <li><a href="tel:+919876543210">+91 98765 43210</a></li>
+            <li><a href="#">Mumbai, India</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>© 2024 NutLux. All rights reserved.</p>
+        <div class="footer-payments">
+          <span class="footer-payment-icon">VISA</span>
+          <span class="footer-payment-icon">MC</span>
+          <span class="footer-payment-icon">UPI</span>
+          <span class="footer-payment-icon">COD</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ═══════ CART SIDEBAR ═══════ -->
+  <div class="cart-overlay" id="cart-overlay" onclick="closeCart()"></div>
+  <aside class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+      <h3>Your Cart <span id="cart-count-label">(0)</span></h3>
+      <button class="cart-close" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <div class="cart-empty" id="cart-empty">
+        <div class="cart-empty-icon">🛒</div>
+        <h4>Your cart is empty</h4>
+        <p style="font-size: var(--fs-sm);">Browse our catalogue and add some premium nuts!</p>
+      </div>
+    </div>
+    <div class="cart-footer" id="cart-footer" style="display:none;">
+      <div class="cart-summary-row">
+        <span>Subtotal</span>
+        <span id="cart-subtotal">₹0</span>
+      </div>
+      <div class="cart-summary-row">
+        <span>Shipping</span>
+        <span id="cart-shipping">Free</span>
+      </div>
+      <div class="cart-summary-row total">
+        <span>Total</span>
+        <span id="cart-total">₹0</span>
+      </div>
+      <button class="btn btn-primary btn-lg" onclick="handleCheckout()">Proceed to Checkout</button>
+    </div>
+  </aside>
+
+  <!-- ═══════ AUTH MODAL ═══════ -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeAuth()">✕</button>
+      <div class="auth-modal-header">
+        <a href="#" class="nav-brand">
+          <div class="nav-brand-icon">🥜</div>
+          <div class="nav-brand-text"><span>Nut</span>Lux</div>
+        </a>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login', this)">Sign In</button>
+        <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register', this)">Create Account</button>
+      </div>
+      <div class="auth-form-container">
+        <!-- LOGIN FORM -->
+        <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="Enter your email" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" placeholder="Enter your password" required />
+          </div>
+          <div class="form-row">
+            <label class="form-checkbox">
+              <input type="checkbox" /> Remember me
+            </label>
+            <a href="#" class="form-link">Forgot password?</a>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+          <div class="auth-divider">or continue with</div>
+          <div class="social-login-btns">
+            <button type="button" class="social-login-btn">G Google</button>
+            <button type="button" class="social-login-btn">f Facebook</button>
+          </div>
+        </form>
+
+        <!-- REGISTER FORM -->
+        <form class="auth-form" id="register-form" onsubmit="handleRegister(event)">
+          <div class="form-group">
+            <label for="register-name">Full Name</label>
+            <input type="text" id="register-name" placeholder="Enter your full name" required />
+          </div>
+          <div class="form-group">
+            <label for="register-email">Email</label>
+            <input type="email" id="register-email" placeholder="Enter your email" required />
+          </div>
+          <div class="form-group">
+            <label for="register-phone">Phone Number</label>
+            <input type="tel" id="register-phone" placeholder="Enter your phone number" required />
+          </div>
+          <div class="form-group">
+            <label for="register-password">Password</label>
+            <input type="password" id="register-password" placeholder="Create a password (min 8 chars)" required minlength="8" />
+          </div>
+          <label class="form-checkbox">
+            <input type="checkbox" required /> I agree to the Terms &amp; Privacy Policy
+          </label>
+          <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+          <div class="auth-divider">or continue with</div>
+          <div class="social-login-btns">
+            <button type="button" class="social-login-btn">G Google</button>
+            <button type="button" class="social-login-btn">f Facebook</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ TOAST CONTAINER ═══════ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
