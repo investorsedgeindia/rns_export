@@ -1,112 +1,39 @@
 /* ============================================
-   NutLux — App Logic
+   NutLux — App Logic (Supabase Edition)
    ============================================ */
+
+// ── Supabase Configuration ──
+const SUPABASE_URL = 'https://lvzmkbgduelpngjnsgdu.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_SL7u7u9ZVCno6e43CovGkA_YUgD5Px1';
+
+if (!window.supabase) {
+  console.error('Supabase SDK failed to load. Check your network connection.');
+}
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storage: window.localStorage,
+    storageKey: 'nutlux-auth',
+  },
+});
 
 // ── Product Data ──
 const PRODUCTS = [
   {
     id: 1,
-    name: 'Premium Whole Cashews',
+    name: 'Plain Whole Cashews',
     category: 'cashew',
-    weight: '500g',
-    price: 899,
-    originalPrice: 1099,
+    weight: '1kg',
+    price: 900,
+    originalPrice: null,
     rating: 4.9,
     reviews: 342,
-    badge: 'bestseller',
+    badge: null,
     image: 'images/cashew_hero.jpg',
-    description: 'W240 grade, hand-sorted whole cashew nuts roasted to perfection.',
-  },
-  {
-    id: 2,
-    name: 'California Almonds',
-    category: 'almond',
-    weight: '500g',
-    price: 749,
-    originalPrice: 949,
-    rating: 4.8,
-    reviews: 278,
-    badge: 'bestseller',
-    image: 'images/almond_hero.jpg',
-    description: 'Premium California almonds, naturally dried and packed for freshness.',
-  },
-  {
-    id: 3,
-    name: 'Sea Salt Cashews',
-    category: 'cashew',
-    weight: '250g',
-    price: 549,
-    originalPrice: null,
-    rating: 4.7,
-    reviews: 186,
-    badge: 'new',
-    image: 'images/cashew_salted.jpg',
-    description: 'Lightly salted with Himalayan pink salt for a delicate savory crunch.',
-  },
-  {
-    id: 4,
-    name: 'Blanched Sliced Almonds',
-    category: 'almond',
-    weight: '200g',
-    price: 449,
-    originalPrice: 599,
-    rating: 4.6,
-    reviews: 124,
-    badge: null,
-    image: 'images/almond_sliced.jpg',
-    description: 'Perfect for baking and garnishing. Thinly sliced blanched almonds.',
-  },
-  {
-    id: 5,
-    name: 'Honey Glazed Cashews',
-    category: 'cashew',
-    weight: '250g',
-    price: 649,
-    originalPrice: null,
-    rating: 4.9,
-    reviews: 215,
-    badge: 'new',
-    image: 'images/cashew_honey.jpg',
-    description: 'Coated in pure organic honey glaze with a hint of sesame.',
-  },
-  {
-    id: 6,
-    name: 'Roasted Almond Mix',
-    category: 'almond',
-    weight: '400g',
-    price: 699,
-    originalPrice: 849,
-    rating: 4.7,
-    reviews: 167,
-    badge: 'sale',
-    image: 'images/almond_hero.jpg',
-    description: 'A robust mix of whole and slivered almonds, perfectly roasted.',
-  },
-  {
-    id: 7,
-    name: 'Royal Nut Gift Box',
-    category: 'combo',
-    weight: '1kg',
-    price: 1999,
-    originalPrice: 2499,
-    rating: 5.0,
-    reviews: 89,
-    badge: 'bestseller',
-    image: 'images/hero_banner.jpg',
-    description: 'An exquisite gift box with premium cashews and almonds. Perfect for festive gifting.',
-  },
-  {
-    id: 8,
-    name: 'Daily Nut Duo Pack',
-    category: 'combo',
-    weight: '500g',
-    price: 1299,
-    originalPrice: 1549,
-    rating: 4.8,
-    reviews: 134,
-    badge: null,
-    image: 'images/cashew_salted.jpg',
-    description: 'A daily dose pack with equal portions of premium cashews and almonds.',
+    description: 'Pure whole cashew nuts — nothing added, nothing taken away. Just clean, natural, premium-grade cashews.',
   },
 ];
 
@@ -143,54 +70,112 @@ const TESTIMONIALS = [
   },
 ];
 
-const SAMPLE_ORDERS = [
-  {
-    id: 'NL-2024-1847',
-    date: '28 Aug 2024',
-    status: 'delivered',
-    progress: 100,
-    items: [
-      { name: 'Premium Whole Cashews', qty: 2, image: 'images/cashew_hero.jpg' },
-      { name: 'California Almonds', qty: 1, image: 'images/almond_hero.jpg' },
-    ],
-    total: 2547,
-  },
-  {
-    id: 'NL-2024-1902',
-    date: '30 Aug 2024',
-    status: 'shipped',
-    progress: 66,
-    items: [
-      { name: 'Honey Glazed Cashews', qty: 1, image: 'images/cashew_honey.jpg' },
-      { name: 'Royal Nut Gift Box', qty: 1, image: 'images/hero_banner.jpg' },
-    ],
-    total: 2648,
-  },
-  {
-    id: 'NL-2024-1958',
-    date: '1 Sep 2024',
-    status: 'processing',
-    progress: 33,
-    items: [
-      { name: 'Sea Salt Cashews', qty: 3, image: 'images/cashew_salted.jpg' },
-    ],
-    total: 1647,
-  },
-];
-
 // ── State ──
 let cart = [];
 let isLoggedIn = false;
 let currentUser = null;
+let pendingProfile = null; // { name, phone } saved between register & OTP verify
+let otpCooldownTimer = null;
+
+// ── Input Validation / Sanitization Helpers ──
+const VALIDATORS = {
+  email: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) && v.length <= 254,
+  name: (v) => /^[A-Za-z\s\.\-']{2,100}$/.test(v),
+  phone: (v) => /^[0-9+\-\s\(\)]{7,15}$/.test(v.trim()),
+  otp: (v) => /^[0-9]{6}$/.test(v),
+};
+
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function sanitizeText(str, max = 500) {
+  if (str == null) return '';
+  return String(str).trim().slice(0, max);
+}
 
 // ── Initialization ──
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   renderProducts('all');
   renderTestimonials();
   initScrollAnimations();
   initNavbarScroll();
   initSmoothScroll();
+  initAuthListener();
+
+  // Restore session on page load
+  await restoreSession();
 });
+
+// ── Auth: Session restoration & listener ──
+async function restoreSession() {
+  try {
+    const { data: { session }, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    if (session?.user) {
+      await loadCurrentUser(session.user.id);
+    }
+  } catch (err) {
+    console.error('Session restore failed:', err);
+    // If refresh token is invalid, sign out cleanly
+    await supabaseClient.auth.signOut();
+  }
+}
+
+function initAuthListener() {
+  supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await loadCurrentUser(session.user.id);
+    } else if (event === 'SIGNED_OUT') {
+      isLoggedIn = false;
+      currentUser = null;
+      updateAuthUI();
+    }
+  });
+}
+
+async function loadCurrentUser(userId) {
+  try {
+    const { data, error } = await supabaseClient
+      .from('customers')
+      .select('id, name, email, phone')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (data) {
+      currentUser = data;
+      isLoggedIn = true;
+      updateAuthUI();
+      await renderOrders();
+    } else {
+      // Auth user exists but profile row missing — happens on first OTP login
+      // (existing user from before phone was collected). Try to populate from metadata.
+      const { data: { user } } = await supabaseClient.auth.getUser();
+      const meta = user?.user_metadata || {};
+      const { error: insertErr } = await supabaseClient
+        .from('customers')
+        .insert({
+          id: userId,
+          email: user.email,
+          name: sanitizeText(meta.name || user.email.split('@')[0], 100),
+          phone: sanitizeText(meta.phone || null, 15),
+        });
+      if (insertErr && insertErr.code !== '23505') throw insertErr;
+      await loadCurrentUser(userId);
+    }
+  } catch (err) {
+    console.error('loadCurrentUser error:', err);
+    showToast('Failed to load profile. Please try again.', 'error');
+  }
+}
 
 // ── Render Products ──
 function renderProducts(filter) {
@@ -200,30 +185,30 @@ function renderProducts(filter) {
     : PRODUCTS.filter(p => p.category === filter);
 
   grid.innerHTML = filtered.map((p, i) => `
-    <div class="product-card reveal reveal-delay-${(i % 4) + 1}" data-category="${p.category}">
-      ${p.badge ? `<span class="product-card-badge ${p.badge}">${p.badge}</span>` : ''}
+    <div class="product-card reveal reveal-delay-${(i % 4) + 1}" data-category="${escapeHtml(p.category)}">
+      ${p.badge ? `<span class="product-card-badge ${escapeHtml(p.badge)}">${escapeHtml(p.badge)}</span>` : ''}
       <div class="product-card-img">
-        <img src="${p.image}" alt="${p.name}" loading="lazy" />
+        <img src="${escapeHtml(p.image)}" alt="${escapeHtml(p.name)}" loading="lazy" />
         <div class="product-card-overlay">
           <button class="btn-icon" title="Quick View" onclick="showToast('Quick view coming soon!', 'info')">👁</button>
           <button class="btn-icon" title="Add to Wishlist" onclick="showToast('Added to wishlist!', 'success')">♡</button>
-          <button class="btn-icon" title="Add to Cart" onclick="addToCart(${p.id})">🛒</button>
+          <button class="btn-icon" title="Add to Cart" onclick="addToCart(${Number(p.id)})">🛒</button>
         </div>
       </div>
       <div class="product-card-body">
-        <div class="product-card-category">${p.category}</div>
-        <h3 class="product-card-title">${p.name}</h3>
-        <div class="product-card-weight">${p.weight}</div>
+        <div class="product-card-category">${escapeHtml(p.category)}</div>
+        <h3 class="product-card-title">${escapeHtml(p.name)}</h3>
+        <div class="product-card-weight">${escapeHtml(p.weight)}</div>
         <div class="product-card-rating">
           <div class="product-card-stars">${renderStars(p.rating)}</div>
           <span class="product-card-rating-count">(${p.reviews})</span>
         </div>
         <div class="product-card-footer">
           <div class="product-card-price">
-            <span class="current">₹${p.price}</span>
-            ${p.originalPrice ? `<span class="original">₹${p.originalPrice}</span>` : ''}
+            <span class="current">₹${Number(p.price).toLocaleString('en-IN')}</span>
+            ${p.originalPrice ? `<span class="original">₹${Number(p.originalPrice).toLocaleString('en-IN')}</span>` : ''}
           </div>
-          <button class="add-to-cart-btn" id="atc-btn-${p.id}" onclick="addToCart(${p.id})">
+          <button class="add-to-cart-btn" id="atc-btn-${Number(p.id)}" onclick="addToCart(${Number(p.id)})">
             <span>+</span> Add
           </button>
         </div>
@@ -231,7 +216,6 @@ function renderProducts(filter) {
     </div>
   `).join('');
 
-  // Re-trigger scroll animations for new elements
   setTimeout(() => {
     document.querySelectorAll('.product-card.reveal').forEach(el => {
       observerInstance.observe(el);
@@ -261,13 +245,13 @@ function renderTestimonials() {
   const track = document.getElementById('testimonials-track');
   track.innerHTML = TESTIMONIALS.map(t => `
     <div class="testimonial-card">
-      <div class="testimonial-stars">${'★'.repeat(t.rating)}${'☆'.repeat(5 - t.rating)}</div>
-      <p class="testimonial-text">${t.text}</p>
+      <div class="testimonial-stars">${'★'.repeat(Number(t.rating))}${'☆'.repeat(5 - Number(t.rating))}</div>
+      <p class="testimonial-text">${escapeHtml(t.text)}</p>
       <div class="testimonial-author">
-        <div class="testimonial-avatar">${t.name.charAt(0)}</div>
+        <div class="testimonial-avatar">${escapeHtml(t.name.charAt(0))}</div>
         <div>
-          <div class="testimonial-author-name">${t.name}</div>
-          <div class="testimonial-author-title">${t.title}</div>
+          <div class="testimonial-author-name">${escapeHtml(t.name)}</div>
+          <div class="testimonial-author-title">${escapeHtml(t.title)}</div>
         </div>
       </div>
     </div>
@@ -276,21 +260,26 @@ function renderTestimonials() {
 
 // ── Cart Functions ──
 function addToCart(productId) {
-  const product = PRODUCTS.find(p => p.id === productId);
+  const id = Number(productId);
+  const product = PRODUCTS.find(p => p.id === id);
   if (!product) return;
 
-  const existing = cart.find(item => item.id === productId);
+  const existing = cart.find(item => item.id === id);
   if (existing) {
     existing.qty += 1;
   } else {
     cart.push({ ...product, qty: 1 });
   }
 
+  // Cap quantity to prevent abuse
+  if (cart.find(i => i.id === id).qty > 99) {
+    cart.find(i => i.id === id).qty = 99;
+  }
+
   updateCartUI();
   showToast(`${product.name} added to cart!`, 'success');
 
-  // Button animation
-  const btn = document.getElementById(`atc-btn-${productId}`);
+  const btn = document.getElementById(`atc-btn-${id}`);
   if (btn) {
     btn.classList.add('added');
     btn.innerHTML = '<span>✓</span> Added';
@@ -302,20 +291,23 @@ function addToCart(productId) {
 }
 
 function removeFromCart(productId) {
-  cart = cart.filter(item => item.id !== productId);
+  const id = Number(productId);
+  cart = cart.filter(item => item.id !== id);
   updateCartUI();
   renderCartItems();
 }
 
 function updateQty(productId, delta) {
-  const item = cart.find(i => i.id === productId);
+  const id = Number(productId);
+  const item = cart.find(i => i.id === id);
   if (!item) return;
 
   item.qty += delta;
   if (item.qty <= 0) {
-    removeFromCart(productId);
+    removeFromCart(id);
     return;
   }
+  if (item.qty > 99) item.qty = 99;
 
   updateCartUI();
   renderCartItems();
@@ -342,7 +334,6 @@ function renderCartItems() {
   const container = document.getElementById('cart-items');
   const emptyEl = document.getElementById('cart-empty');
 
-  // Remove existing cart items (not the empty state)
   container.querySelectorAll('.cart-item').forEach(el => el.remove());
 
   cart.forEach(item => {
@@ -350,19 +341,19 @@ function renderCartItems() {
     el.className = 'cart-item';
     el.innerHTML = `
       <div class="cart-item-img">
-        <img src="${item.image}" alt="${item.name}" />
+        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />
       </div>
       <div class="cart-item-info">
-        <div class="cart-item-title">${item.name}</div>
-        <div class="cart-item-variant">${item.weight}</div>
+        <div class="cart-item-title">${escapeHtml(item.name)}</div>
+        <div class="cart-item-variant">${escapeHtml(item.weight)}</div>
         <div class="cart-item-controls">
           <div class="qty-control">
-            <button class="qty-btn" onclick="updateQty(${item.id}, -1)">−</button>
-            <span class="qty-value">${item.qty}</span>
-            <button class="qty-btn" onclick="updateQty(${item.id}, 1)">+</button>
+            <button class="qty-btn" onclick="updateQty(${Number(item.id)}, -1)" aria-label="Decrease quantity">−</button>
+            <span class="qty-value">${Number(item.qty)}</span>
+            <button class="qty-btn" onclick="updateQty(${Number(item.id)}, 1)" aria-label="Increase quantity">+</button>
           </div>
-          <span class="cart-item-price">₹${(item.price * item.qty).toLocaleString('en-IN')}</span>
-          <button class="cart-item-remove" onclick="removeFromCart(${item.id})">🗑</button>
+          <span class="cart-item-price">₹${(Number(item.price) * Number(item.qty)).toLocaleString('en-IN')}</span>
+          <button class="cart-item-remove" onclick="removeFromCart(${Number(item.id)})" aria-label="Remove item">🗑</button>
         </div>
       </div>
     `;
@@ -383,174 +374,458 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
-function handleCheckout() {
-  if (!isLoggedIn) {
+// ── Checkout: insert order into DB ──
+async function handleCheckout() {
+  if (!isLoggedIn || !currentUser) {
     closeCart();
     openAuth();
     showToast('Please sign in to checkout', 'info');
     return;
   }
-  showToast('Checkout functionality coming soon!', 'info');
+
+  if (cart.length === 0) {
+    showToast('Your cart is empty', 'error');
+    return;
+  }
+
+  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const orderItems = cart.map(item => ({
+    id: Number(item.id),
+    name: sanitizeText(item.name, 100),
+    weight: sanitizeText(item.weight, 50),
+    price: Number(item.price),
+    qty: Number(item.qty),
+    image: sanitizeText(item.image, 200),
+  }));
+
+  const submitBtn = document.querySelector('#cart-footer .btn');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Placing order…';
+  }
+
+  try {
+    // Send items + claimed total for client UX display, but the DB
+    // trigger `aaa_recalc_totals` recomputes and OVERWRITES the total
+    // from the authoritative public.products table. Client price lies
+    // are silently corrected server-side.
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .insert({
+        customer_id: currentUser.id,
+        items: orderItems,
+        total: total,
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    const serverTotal = Number(data.total) || total;
+    showToast(`Order ${data.id.slice(0, 8).toUpperCase()} placed! Total: ₹${serverTotal.toLocaleString('en-IN')}`, 'success');
+    cart = [];
+    updateCartUI();
+    renderCartItems();
+    closeCart();
+    await renderOrders();
+    document.getElementById('orders').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  } catch (err) {
+    console.error('Checkout failed:', err);
+    showToast(err.message || 'Could not place order. Please try again.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Proceed to Checkout';
+    }
+  }
 }
 
-// ── Auth Functions ──
+// ── Auth UI ──
 function openAuth() {
   document.getElementById('auth-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
 
 function closeAuth() {
   document.getElementById('auth-overlay').classList.remove('open');
   document.body.style.overflow = '';
+  pendingProfile = null;
 }
 
 function switchAuthTab(tab, btn) {
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  if (btn) btn.classList.add('active');
 
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
   document.getElementById(`${tab}-form`).classList.add('active');
 }
 
-function handleLogin(e) {
-  e.preventDefault();
-  const email = document.getElementById('login-email').value;
-  
-  // Simulated login
-  isLoggedIn = true;
-  currentUser = { name: email.split('@')[0], email };
-  
-  closeAuth();
-  showToast(`Welcome back, ${currentUser.name}!`, 'success');
-  updateAuthUI();
-  renderOrders();
+function showOtpForm(email) {
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.getElementById('otp-form').classList.add('active');
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('otp-email-display').textContent = email;
+  document.getElementById('otp-code').value = '';
+  startOtpCooldown(60);
 }
 
-function handleRegister(e) {
+function backToAuth(e) {
   e.preventDefault();
-  const name = document.getElementById('register-name').value;
-  const email = document.getElementById('register-email').value;
-
-  // Simulated registration
-  isLoggedIn = true;
-  currentUser = { name, email };
-  
-  closeAuth();
-  showToast(`Welcome to NutLux, ${name}! 🎉`, 'success');
-  updateAuthUI();
-  renderOrders();
+  pendingProfile = null;
+  switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
 
-function updateAuthUI() {
-  const accountBtn = document.getElementById('account-btn');
-  if (isLoggedIn) {
-    accountBtn.innerHTML = `<span style="font-size: 12px; font-weight: 700;">${currentUser.name.charAt(0).toUpperCase()}</span>`;
-    accountBtn.style.background = 'var(--grad-gold)';
-    accountBtn.style.color = 'var(--clr-text-inverse)';
-    accountBtn.onclick = () => {
-      if (confirm('Sign out?')) {
-        isLoggedIn = false;
-        currentUser = null;
-        accountBtn.innerHTML = '👤';
-        accountBtn.style.background = '';
-        accountBtn.style.color = '';
-        accountBtn.onclick = openAuth;
-        updateAuthUI();
-        showToast('Signed out successfully', 'info');
-      }
-    };
+let otpSecondsLeft = 0;
+function startOtpCooldown(seconds) {
+  otpSecondsLeft = seconds;
+  const btn = document.getElementById('otp-form')?.querySelector('button[type="submit"]');
+  const resendLink = document.querySelector('#otp-form a[onclick*="resendOtp"]');
+  if (!resendLink) return;
+  const originalText = 'Resend code';
+  const tick = () => {
+    if (otpSecondsLeft <= 0) {
+      resendLink.textContent = originalText;
+      resendLink.style.pointerEvents = 'auto';
+      resendLink.style.opacity = '1';
+      if (otpCooldownTimer) clearInterval(otpCooldownTimer);
+      return;
+    }
+    resendLink.textContent = `Resend code (${otpSecondsLeft}s)`;
+    resendLink.style.pointerEvents = 'none';
+    resendLink.style.opacity = '0.6';
+    otpSecondsLeft--;
+  };
+  tick();
+  if (otpCooldownTimer) clearInterval(otpCooldownTimer);
+  otpCooldownTimer = setInterval(tick, 1000);
+}
+
+// ── Login (existing user, email OTP) ──
+async function handleLogin(e) {
+  e.preventDefault();
+  const emailRaw = document.getElementById('login-email').value;
+  const email = sanitizeText(emailRaw, 254).toLowerCase();
+
+  if (!VALIDATORS.email(email)) {
+    showToast('Please enter a valid email address.', 'error');
+    return;
   }
 
-  // Show/hide orders link
+  pendingProfile = null;
+  await requestOtp(email);
+}
+
+// ── Register (collects name+phone, then sends OTP) ──
+async function handleRegister(e) {
+  e.preventDefault();
+  const nameRaw = document.getElementById('register-name').value;
+  const emailRaw = document.getElementById('register-email').value;
+  const phoneRaw = document.getElementById('register-phone').value;
+
+  const name = sanitizeText(nameRaw, 100);
+  const email = sanitizeText(emailRaw, 254).toLowerCase();
+  const phone = sanitizeText(phoneRaw, 15);
+
+  if (!VALIDATORS.name(name)) {
+    showToast('Name must be 2-100 letters, spaces, dots or hyphens.', 'error');
+    return;
+  }
+  if (!VALIDATORS.email(email)) {
+    showToast('Please enter a valid email address.', 'error');
+    return;
+  }
+  if (!VALIDATORS.phone(phone)) {
+    showToast('Phone must be 7-15 digits (with optional + - ( ) spaces).', 'error');
+    return;
+  }
+
+  pendingProfile = { name, phone };
+  await requestOtp(email, { name, phone });
+}
+
+// ── Send OTP via Supabase ──
+async function requestOtp(email, profileData = null) {
+  try {
+    const options = {
+      shouldCreateUser: true,
+      emailRedirectTo: window.location.origin,
+    };
+
+    // Pass profile data through user_metadata so we can populate customers table on first sign-in
+    if (profileData) {
+      options.data = {
+        name: profileData.name,
+        phone: profileData.phone,
+      };
+    }
+
+    const { error } = await supabaseClient.auth.signInWithOtp({
+      email,
+      options,
+    });
+
+    if (error) throw error;
+
+    showOtpForm(email);
+    showToast('Check your email for the 6-digit code.', 'success');
+  } catch (err) {
+    console.error('OTP request failed:', err);
+    showToast(err.message || 'Could not send OTP. Please try again.', 'error');
+  }
+}
+
+// ── Verify OTP ──
+async function handleOtpVerify(e) {
+  e.preventDefault();
+  const codeRaw = document.getElementById('otp-code').value;
+  const emailDisplay = document.getElementById('otp-email-display').textContent;
+  const code = sanitizeText(codeRaw, 6);
+
+  if (!VALIDATORS.otp(code)) {
+    showToast('Code must be exactly 6 digits.', 'error');
+    return;
+  }
+
+  const submitBtn = e.target.querySelector('button[type="submit"]');
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Verifying…';
+  }
+
+  try {
+    const { data, error } = await supabaseClient.auth.verifyOtp({
+      email: emailDisplay,
+      token: code,
+      type: 'email',
+    });
+
+    if (error) throw error;
+
+    // On first sign-in, ensure a customers row exists with profile data
+    if (data?.user && pendingProfile) {
+      const { error: upsertErr } = await supabaseClient
+        .from('customers')
+        .upsert({
+          id: data.user.id,
+          email: data.user.email,
+          name: pendingProfile.name,
+          phone: pendingProfile.phone,
+        }, { onConflict: 'id' });
+
+      if (upsertErr && upsertErr.code !== '23505') throw upsertErr;
+      pendingProfile = null;
+    }
+
+    closeAuth();
+    showToast('Signed in successfully!', 'success');
+    // loadCurrentUser is triggered automatically by onAuthStateChange listener
+  } catch (err) {
+    console.error('OTP verify failed:', err);
+    showToast(err.message || 'Invalid or expired code. Please try again.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Verify & Sign In';
+    }
+  }
+}
+
+async function resendOtp(e) {
+  e.preventDefault();
+  if (otpSecondsLeft > 0) return;
+  const email = document.getElementById('otp-email-display').textContent;
+  await requestOtp(email, pendingProfile);
+}
+
+// ── OAuth (Google) ──
+async function handleOAuth(provider) {
+  try {
+    const { error } = await supabaseClient.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    });
+    if (error) throw error;
+  } catch (err) {
+    console.error('OAuth failed:', err);
+    showToast(err.message || 'OAuth sign-in failed.', 'error');
+  }
+}
+
+// ── Auth UI sync ──
+function updateAuthUI() {
+  const accountBtn = document.getElementById('account-btn');
   const ordersSection = document.getElementById('orders');
   const ordersLoggedOut = document.getElementById('orders-logged-out');
   const ordersList = document.getElementById('orders-list');
-  
-  if (isLoggedIn) {
+
+  if (isLoggedIn && currentUser) {
+    const initial = (currentUser.name || currentUser.email || '?').charAt(0).toUpperCase();
+    accountBtn.innerHTML = `<span style="font-size: 12px; font-weight: 700;">${escapeHtml(initial)}</span>`;
+    accountBtn.style.background = 'var(--grad-gold)';
+    accountBtn.style.color = 'var(--clr-text-inverse)';
+    accountBtn.title = currentUser.email || '';
+    accountBtn.onclick = async () => {
+      if (confirm('Sign out?')) {
+        await supabaseClient.auth.signOut();
+        showToast('Signed out successfully', 'info');
+      }
+    };
     ordersSection.classList.add('visible');
     ordersLoggedOut.style.display = 'none';
     ordersList.style.display = 'flex';
   } else {
+    accountBtn.innerHTML = '👤';
+    accountBtn.style.background = '';
+    accountBtn.style.color = '';
+    accountBtn.title = '';
+    accountBtn.onclick = openAuth;
+    ordersSection.classList.remove('visible');
     ordersLoggedOut.style.display = 'block';
     ordersList.style.display = 'none';
   }
 }
 
-// ── Order Tracking ──
-function renderOrders() {
+// ── Order Tracking: fetch real orders from DB ──
+async function renderOrders() {
   const list = document.getElementById('orders-list');
-  list.innerHTML = SAMPLE_ORDERS.map(order => `
+  if (!isLoggedIn || !currentUser) {
+    list.innerHTML = '';
+    return;
+  }
+
+  list.innerHTML = '<div style="text-align:center; color: var(--clr-text-secondary); padding: var(--sp-6);">Loading your orders…</div>';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select('id, items, total, status, progress, created_at')
+      .eq('customer_id', currentUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      list.innerHTML = `
+        <div style="text-align:center; padding: var(--sp-8); color: var(--clr-text-secondary);">
+          <div style="font-size: 3rem; margin-bottom: var(--sp-3);">📦</div>
+          <h3 style="margin-bottom: var(--sp-2);">No orders yet</h3>
+          <p>Your order history will appear here once you place your first order.</p>
+        </div>
+      `;
+      return;
+    }
+
+    list.innerHTML = data.map(order => renderOrderCard(order)).join('');
+  } catch (err) {
+    console.error('renderOrders error:', err);
+    list.innerHTML = `<div style="text-align:center; color: var(--clr-danger, #c0392b); padding: var(--sp-6);">Could not load orders. Please refresh and try again.</div>`;
+  }
+}
+
+function renderOrderCard(order) {
+  const date = new Date(order.created_at);
+  const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  const progress = Number(order.progress) || 0;
+  const status = escapeHtml(order.status || 'processing');
+  const total = Number(order.total) || 0;
+  const shortId = order.id.slice(0, 8).toUpperCase();
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const thumbs = items.map(it => `
+    <div class="order-item-thumb" title="${escapeHtml(it.name)}">
+      <img src="${escapeHtml(it.image || 'images/cashew_hero.jpg')}" alt="${escapeHtml(it.name)}" onerror="this.src='images/cashew_hero.jpg'" />
+    </div>
+  `).join('');
+
+  const itemLines = items.map(it => `
+    <span style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(it.name)} × ${Number(it.qty)}</span>
+  `).join('');
+
+  return `
     <div class="order-card">
       <div class="order-card-header">
-        <span class="order-id">${order.id}</span>
-        <span class="order-date">Ordered: ${order.date}</span>
-        <span class="order-status ${order.status}">${order.status}</span>
+        <span class="order-id">#${escapeHtml(shortId)}</span>
+        <span class="order-date">Ordered: ${escapeHtml(dateStr)}</span>
+        <span class="order-status ${status}">${status}</span>
       </div>
       <div class="order-card-body">
         <div class="order-items-preview">
-          ${order.items.map(item => `
-            <div class="order-item-thumb">
-              <img src="${item.image}" alt="${item.name}" />
-            </div>
-          `).join('')}
+          ${thumbs}
           <div style="display:flex; flex-direction:column; justify-content:center; margin-left: var(--sp-2);">
-            ${order.items.map(item => `
-              <span style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${item.name} × ${item.qty}</span>
-            `).join('')}
+            ${itemLines}
           </div>
         </div>
-        
+
         <div class="order-timeline">
-          <div class="order-timeline-progress" style="width: ${order.progress}%;"></div>
-          <div class="timeline-step ${order.progress >= 10 ? 'completed' : ''}">
+          <div class="order-timeline-progress" style="width: ${progress}%;"></div>
+          <div class="timeline-step ${progress >= 10 ? 'completed' : ''}">
             <div class="timeline-step-dot">✓</div>
             <span class="timeline-step-label">Confirmed</span>
           </div>
-          <div class="timeline-step ${order.progress >= 33 ? 'completed' : ''} ${order.progress >= 25 && order.progress < 50 ? 'active' : ''}">
-            <div class="timeline-step-dot">${order.progress >= 33 ? '✓' : ''}</div>
+          <div class="timeline-step ${progress >= 33 ? 'completed' : ''} ${progress >= 25 && progress < 50 ? 'active' : ''}">
+            <div class="timeline-step-dot">${progress >= 33 ? '✓' : ''}</div>
             <span class="timeline-step-label">Processing</span>
           </div>
-          <div class="timeline-step ${order.progress >= 66 ? 'completed' : ''} ${order.progress >= 50 && order.progress < 80 ? 'active' : ''}">
-            <div class="timeline-step-dot">${order.progress >= 66 ? '✓' : ''}</div>
+          <div class="timeline-step ${progress >= 66 ? 'completed' : ''} ${progress >= 50 && progress < 80 ? 'active' : ''}">
+            <div class="timeline-step-dot">${progress >= 66 ? '✓' : ''}</div>
             <span class="timeline-step-label">Shipped</span>
           </div>
-          <div class="timeline-step ${order.progress >= 100 ? 'completed' : ''} ${order.progress >= 80 && order.progress < 100 ? 'active' : ''}">
-            <div class="timeline-step-dot">${order.progress >= 100 ? '✓' : ''}</div>
+          <div class="timeline-step ${progress >= 100 ? 'completed' : ''} ${progress >= 80 && progress < 100 ? 'active' : ''}">
+            <div class="timeline-step-dot">${progress >= 100 ? '✓' : ''}</div>
             <span class="timeline-step-label">Delivered</span>
           </div>
         </div>
 
         <div class="order-total">
-          Order Total: <strong>₹${order.total.toLocaleString('en-IN')}</strong>
+          Order Total: <strong>₹${total.toLocaleString('en-IN')}</strong>
         </div>
       </div>
     </div>
-  `).join('');
+  `;
 }
 
 // ── Toast Notifications ──
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
+  if (!container) return;
   const icons = { success: '✅', error: '❌', info: '💡' };
-  
+  const safeMsg = escapeHtml(message);
+
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
+  toast.setAttribute('role', type === 'error' ? 'alert' : 'status');
   toast.innerHTML = `
-    <span class="toast-icon">${icons[type]}</span>
-    <span class="toast-message">${message}</span>
+    <span class="toast-icon">${icons[type] || '💡'}</span>
+    <span class="toast-message">${safeMsg}</span>
   `;
   container.appendChild(toast);
 
   setTimeout(() => {
     toast.classList.add('removing');
     setTimeout(() => toast.remove(), 300);
-  }, 3000);
+  }, 3500);
 }
 
 // ── Newsletter ──
-function handleNewsletter(e) {
+async function handleNewsletter(e) {
   e.preventDefault();
-  const email = document.getElementById('newsletter-email').value;
+  const email = sanitizeText(document.getElementById('newsletter-email').value, 254).toLowerCase();
+  if (!VALIDATORS.email(email)) {
+    showToast('Please enter a valid email.', 'error');
+    return;
+  }
+
+  try {
+    // Optional: persist newsletter signups. Skips silently if table doesn't exist.
+    const { error } = await supabaseClient
+      .from('newsletter_subscribers')
+      .insert({ email });
+    if (error && error.code !== '42P01') throw error; // 42P01 = table missing, ignore
+  } catch (err) {
+    console.warn('Newsletter save skipped:', err.message);
+  }
+
   showToast('Welcome to the NutLux family! Check your inbox for 15% off 🎁', 'success');
   document.getElementById('newsletter-email').value = '';
 }
@@ -614,14 +889,15 @@ function updateActiveNav() {
 function initSmoothScroll() {
   document.querySelectorAll('a[href^="#"]').forEach(link => {
     link.addEventListener('click', (e) => {
-      e.preventDefault();
-      const target = document.querySelector(link.getAttribute('href'));
+      const href = link.getAttribute('href');
+      if (!href || href === '#') return;
+      const target = document.querySelector(href);
       if (target) {
+        e.preventDefault();
         const offset = 80;
         const top = target.getBoundingClientRect().top + window.scrollY - offset;
         window.scrollTo({ top, behavior: 'smooth' });
       }
-      // Close mobile menu
       document.getElementById('nav-links').classList.remove('open');
     });
   });

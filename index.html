@@ -57,12 +57,12 @@
           Freshly Harvested · 2024 Collection
         </div>
         <h1>
-          Nature's Finest<br />
-          <span class="highlight">Premium Nuts</span>
+          Pure &amp; Simple<br />
+          <span class="highlight">Whole Cashews</span>
         </h1>
         <p class="hero-description">
-          Handpicked from the world's finest orchards. Our cashews and almonds 
-          are expertly roasted, carefully packaged, and delivered fresh to your doorstep.
+          Just one product, done right — premium whole cashew nuts, nothing added, nothing taken away. 
+          Handpicked, sorted, and packed fresh from the farm to your doorstep.
         </p>
         <div class="hero-cta">
           <a href="#catalogue" class="btn btn-primary btn-lg">Shop Collection</a>
@@ -99,8 +99,6 @@
       <div class="catalogue-filters reveal">
         <button class="filter-btn active" data-filter="all" onclick="filterProducts('all', this)">All Products</button>
         <button class="filter-btn" data-filter="cashew" onclick="filterProducts('cashew', this)">Cashews</button>
-        <button class="filter-btn" data-filter="almond" onclick="filterProducts('almond', this)">Almonds</button>
-        <button class="filter-btn" data-filter="combo" onclick="filterProducts('combo', this)">Gift Combos</button>
       </div>
 
       <div class="products-grid" id="products-grid">
@@ -215,16 +213,14 @@
           </div>
         </div>
 
-        <div>
-          <h4 class="footer-col-title">Quick Links</h4>
-          <ul class="footer-links">
-            <li><a href="#catalogue">All Products</a></li>
-            <li><a href="#catalogue">Cashews</a></li>
-            <li><a href="#catalogue">Almonds</a></li>
-            <li><a href="#catalogue">Gift Combos</a></li>
-            <li><a href="#about">About Us</a></li>
-          </ul>
-        </div>
+<div>
+            <h4 class="footer-col-title">Quick Links</h4>
+            <ul class="footer-links">
+              <li><a href="#catalogue">All Products</a></li>
+              <li><a href="#catalogue">Cashews</a></li>
+              <li><a href="#about">About Us</a></li>
+            </ul>
+          </div>
 
         <div>
           <h4 class="footer-col-title">Support</h4>
@@ -309,23 +305,16 @@
         <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
           <div class="form-group">
             <label for="login-email">Email</label>
-            <input type="email" id="login-email" placeholder="Enter your email" required />
+            <input type="email" id="login-email" placeholder="Enter your email" required autocomplete="email" maxlength="254" />
           </div>
-          <div class="form-group">
-            <label for="login-password">Password</label>
-            <input type="password" id="login-password" placeholder="Enter your password" required />
-          </div>
-          <div class="form-row">
-            <label class="form-checkbox">
-              <input type="checkbox" /> Remember me
-            </label>
-            <a href="#" class="form-link">Forgot password?</a>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg">Sign In</button>
+          <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">
+            We'll email you a one-time login code. No password needed.
+          </p>
           <div class="auth-divider">or continue with</div>
           <div class="social-login-btns">
-            <button type="button" class="social-login-btn">G Google</button>
-            <button type="button" class="social-login-btn">f Facebook</button>
+            <button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button>
+            <button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button>
           </div>
         </form>
 
@@ -333,29 +322,41 @@
         <form class="auth-form" id="register-form" onsubmit="handleRegister(event)">
           <div class="form-group">
             <label for="register-name">Full Name</label>
-            <input type="text" id="register-name" placeholder="Enter your full name" required />
+            <input type="text" id="register-name" placeholder="Enter your full name" required autocomplete="name" maxlength="100" pattern="[A-Za-z\s\.\-']{2,100}" title="Letters, spaces, dots, hyphens only" />
           </div>
           <div class="form-group">
             <label for="register-email">Email</label>
-            <input type="email" id="register-email" placeholder="Enter your email" required />
+            <input type="email" id="register-email" placeholder="Enter your email" required autocomplete="email" maxlength="254" />
           </div>
           <div class="form-group">
             <label for="register-phone">Phone Number</label>
-            <input type="tel" id="register-phone" placeholder="Enter your phone number" required />
-          </div>
-          <div class="form-group">
-            <label for="register-password">Password</label>
-            <input type="password" id="register-password" placeholder="Create a password (min 8 chars)" required minlength="8" />
+            <input type="tel" id="register-phone" placeholder="10-digit phone number" required autocomplete="tel" maxlength="15" pattern="[0-9+\-\s\(\)]{7,15}" title="7-15 digits, may include + - ( ) spaces" />
           </div>
           <label class="form-checkbox">
-            <input type="checkbox" required /> I agree to the Terms &amp; Privacy Policy
+            <input type="checkbox" required id="register-terms" /> I agree to the Terms &amp; Privacy Policy
           </label>
-          <button type="submit" class="btn btn-primary btn-lg">Create Account</button>
+          <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
           <div class="auth-divider">or continue with</div>
           <div class="social-login-btns">
-            <button type="button" class="social-login-btn">G Google</button>
-            <button type="button" class="social-login-btn">f Facebook</button>
+            <button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button>
+            <button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button>
           </div>
+        </form>
+
+        <!-- OTP VERIFICATION FORM -->
+        <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-4); text-align:center;">
+            Enter the 6-digit code sent to<br /><strong id="otp-email-display"></strong>
+          </p>
+          <div class="form-group">
+            <label for="otp-code">Verification Code</label>
+            <input type="text" id="otp-code" placeholder="6-digit code" required maxlength="6" minlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing: 0.5em; text-align:center; font-size: 1.25rem;" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg">Verify &amp; Sign In</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">
+            Didn't get it? <a href="#" onclick="resendOtp(event)" style="color: var(--clr-primary);">Resend code</a>
+            · <a href="#" onclick="backToAuth(event)" style="color: var(--clr-primary);">Use different email</a>
+          </p>
         </form>
       </div>
     </div>
@@ -364,6 +365,8 @@
   <!-- ═══════ TOAST CONTAINER ═══════ -->
   <div class="toast-container" id="toast-container"></div>
 
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>
