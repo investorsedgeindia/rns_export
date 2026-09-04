@@ -3,18 +3,14 @@
    ============================================ */
 
 // ── Supabase Configuration ──
-const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
+// Uses window.SUPABASE_CONFIG from config.js if available, or falls back to project keys for Vercel/production
+const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {
+  url: 'https://lvzmkbgduelpngjnsgdu.supabase.co',
+  anonKey: 'sb_publishable_oi31ZqkSDau8ace9TZM8uA_NzDzsv5z',
+};
 
-if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
-  console.error(
-    '[RNS Dryfruits] Supabase config missing.\n' +
-    'Create a config.js file based on config.example.js with your real keys.\n' +
-    'See the README or config.example.js for instructions.'
-  );
-}
-
-const SUPABASE_URL = SUPABASE_CONFIG.url;
-const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey;
+const SUPABASE_URL = SUPABASE_CONFIG.url || 'https://lvzmkbgduelpngjnsgdu.supabase.co';
+const SUPABASE_ANON_KEY = SUPABASE_CONFIG.anonKey || 'sb_publishable_oi31ZqkSDau8ace9TZM8uA_NzDzsv5z';
 
 if (!window.supabase) {
   console.error('Supabase SDK failed to load. Check your network connection.');
