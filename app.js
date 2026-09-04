@@ -171,7 +171,11 @@ function changeShowcaseQty(delta) {
   if (el) el.textContent = String(showcaseQty);
 }
 
-function addShowcaseToCart() {
+async function addShowcaseToCart() {
+  if (!(await requireAuth())) {
+    return;
+  }
+
   const product = PRODUCTS[0];
   if (!product) return;
   const existing = cart.find(item => item.id === product.id);
@@ -196,7 +200,44 @@ function addShowcaseToCart() {
 }
 
 // ── Cart Functions ──
-function addToCart(productId) {
+
+// Verify the user is logged in before performing cart actions that require
+// an account (e.g. adding items that will become an order).
+// Returns true if the user is authenticated; false if they were redirected
+// to the auth modal.
+async function requireAuth() {
+  if (isLoggedIn && currentUser) {
+    return true;
+  }
+
+  // Verify the session is actually valid against Supabase (not just stale state)
+  try {
+    const { data: { user }, error } = await supabaseClient.auth.getUser();
+    if (error) {
+      console.warn('[Auth check] getUser error (continuing to login):', error);
+    }
+    if (user) {
+      // Session is valid but local state wasn't synced — reload the profile
+      await loadCurrentUser(user.id);
+      if (isLoggedIn && currentUser) {
+        return true;
+      }
+    }
+  } catch (err) {
+    console.warn('[Auth check] verification exception:', err);
+  }
+
+  // Not authenticated → redirect to auth modal
+  openAuth();
+  showToast('Please sign in to add items to your cart', 'info');
+  return false;
+}
+
+async function addToCart(productId) {
+  if (!(await requireAuth())) {
+    return;
+  }
+
   const id = Number(productId);
   const product = PRODUCTS.find(p => p.id === id);
   if (!product) return;
@@ -209,8 +250,8 @@ function addToCart(productId) {
   }
 
   // Sync the showcase quantity display if present
-  const showcaseQty = document.getElementById('showcase-qty');
-  if (showcaseQty) showcaseQty.textContent = String(existing ? existing.qty : 1);
+  const showcaseQtyEl = document.getElementById('showcase-qty');
+  if (showcaseQtyEl) showcaseQtyEl.textContent = String(existing ? existing.qty : 1);
 
   updateCartUI();
   showToast(`${product.name} added to cart!`, 'success');
@@ -312,10 +353,9 @@ function closeCart() {
 
 // ── Checkout: insert order into DB ──
 async function handleCheckout() {
-  if (!isLoggedIn || !currentUser) {
+  // Verify session against Supabase before proceeding
+  if (!(await requireAuth())) {
     closeCart();
-    openAuth();
-    showToast('Please sign in to checkout', 'info');
     return;
   }
 
