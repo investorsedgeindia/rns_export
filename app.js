@@ -417,19 +417,41 @@ async function handleCheckout() {
 }
 
 // ── Auth UI ──
+// ── Auth Alerts ──
+function showAuthAlert(message, type = 'error') {
+  const alertEl = document.getElementById('auth-alert');
+  if (!alertEl) return;
+  const icons = { error: '⚠️', info: 'ℹ️', success: '✅' };
+  alertEl.className = `auth-alert ${type}`;
+  alertEl.innerHTML = `<span>${icons[type] || '⚠️'}</span> <div>${escapeHtml(message)}</div>`;
+  alertEl.style.display = 'flex';
+}
+
+function clearAuthAlert() {
+  const alertEl = document.getElementById('auth-alert');
+  if (alertEl) {
+    alertEl.style.display = 'none';
+    alertEl.innerHTML = '';
+  }
+}
+
+// ── Auth UI ──
 function openAuth() {
+  clearAuthAlert();
   document.getElementById('auth-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
 
 function closeAuth() {
+  clearAuthAlert();
   document.getElementById('auth-overlay').classList.remove('open');
   document.body.style.overflow = '';
   pendingProfile = null;
 }
 
 function switchAuthTab(tab, btn) {
+  clearAuthAlert();
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   if (btn) btn.classList.add('active');
 
@@ -438,6 +460,7 @@ function switchAuthTab(tab, btn) {
 }
 
 function showOtpForm(email) {
+  clearAuthAlert();
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
   document.getElementById('otp-form').classList.add('active');
   document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
@@ -451,6 +474,7 @@ function showOtpForm(email) {
 
 function backToAuth(e) {
   e.preventDefault();
+  clearAuthAlert();
   pendingProfile = null;
   switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
@@ -483,53 +507,76 @@ function startOtpCooldown(seconds) {
 // ── Login (existing user, email OTP) ──
 async function handleLogin(e) {
   e.preventDefault();
+  clearAuthAlert();
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
   const emailRaw = document.getElementById('login-email').value;
   const email = sanitizeText(emailRaw, 254).toLowerCase();
 
   if (!VALIDATORS.email(email)) {
+    showAuthAlert('Please enter a valid email address.');
     showToast('Please enter a valid email address.', 'error');
     return;
   }
 
   pendingProfile = null;
-  await requestOtp(email);
+  await requestOtp(email, null, submitBtn);
 }
 
 // ── Register (collects name+phone, then sends OTP) ──
 async function handleRegister(e) {
   e.preventDefault();
+  clearAuthAlert();
+  const form = e.target;
+  const submitBtn = form.querySelector('button[type="submit"]');
   const nameRaw = document.getElementById('register-name').value;
   const emailRaw = document.getElementById('register-email').value;
   const phoneRaw = document.getElementById('register-phone').value;
+  const termsChecked = document.getElementById('register-terms')?.checked;
 
   const name = sanitizeText(nameRaw, 100);
   const email = sanitizeText(emailRaw, 254).toLowerCase();
   const phone = sanitizeText(phoneRaw, 15);
 
-  if (!VALIDATORS.name(name)) {
+  if (!name || !VALIDATORS.name(name)) {
+    showAuthAlert('Name must be 2-100 letters, spaces, dots or hyphens.');
     showToast('Name must be 2-100 letters, spaces, dots or hyphens.', 'error');
     return;
   }
-  if (!VALIDATORS.email(email)) {
+  if (!email || !VALIDATORS.email(email)) {
+    showAuthAlert('Please enter a valid email address.');
     showToast('Please enter a valid email address.', 'error');
     return;
   }
-  if (!VALIDATORS.phone(phone)) {
+  if (!phone || !VALIDATORS.phone(phone)) {
+    showAuthAlert('Phone must be 7-15 digits (e.g. 9876543210).');
     showToast('Phone must be 7-15 digits (with optional + - ( ) spaces).', 'error');
+    return;
+  }
+  if (!termsChecked) {
+    showAuthAlert('Please agree to the Terms & Privacy Policy to continue.');
     return;
   }
 
   pendingProfile = { name, phone };
-  await requestOtp(email, { name, phone });
+  await requestOtp(email, { name, phone }, submitBtn);
 }
 
 // ── Send OTP via Supabase ──
-async function requestOtp(email, profileData = null) {
+async function requestOtp(email, profileData = null, triggerBtn = null) {
+  const originalBtnText = triggerBtn ? triggerBtn.innerHTML : null;
+  if (triggerBtn) {
+    triggerBtn.disabled = true;
+    triggerBtn.innerHTML = '<span class="btn-spinner"></span> Sending OTP…';
+  }
+
   try {
     const options = {
       shouldCreateUser: true,
-      emailRedirectTo: window.location.origin,
     };
+    if (window.location.origin && window.location.origin !== 'null' && window.location.protocol.startsWith('http')) {
+      options.emailRedirectTo = window.location.origin;
+    }
 
     // Pass profile data through user_metadata so we can populate customers table on first sign-in
     if (profileData) {
@@ -546,35 +593,45 @@ async function requestOtp(email, profileData = null) {
 
     if (error) {
       console.error('[Supabase signInWithOtp error]', error);
-      // Friendly messages for common cases
       const msg = (error.message || '').toLowerCase();
+      let userMsg = error.message || 'Could not send OTP. Please try again.';
       if (msg.includes('signups not allowed') || msg.includes('signup_disabled')) {
-        showToast('New signups are currently disabled. Contact support.', 'error');
-      } else if (msg.includes('rate limit') || msg.includes('email rate')) {
-        showToast('Too many attempts. Please wait a minute and try again.', 'error');
-      } else {
-        showToast(error.message || 'Could not send OTP. Please try again.', 'error');
+        userMsg = 'New signups are currently disabled in Supabase. Contact support.';
+      } else if (msg.includes('rate limit') || msg.includes('over_email_send_rate_limit') || msg.includes('email rate')) {
+        userMsg = 'Email rate limit reached! Supabase free default mailer allows only 3-4 emails/hr. Please configure Custom SMTP (Resend) in your Supabase project.';
       }
+      showAuthAlert(userMsg, 'error');
+      showToast(userMsg, 'error');
       return;
     }
 
+    clearAuthAlert();
     console.log('[Supabase signInWithOtp] OTP request sent to', email);
     showOtpForm(email);
     showToast('Check your email for the 6-digit code.', 'success');
   } catch (err) {
     console.error('[OTP request exception]', err);
-    showToast(err.message || 'Could not send OTP. Please try again.', 'error');
+    const userMsg = err.message || 'Could not send OTP. Please try again.';
+    showAuthAlert(userMsg, 'error');
+    showToast(userMsg, 'error');
+  } finally {
+    if (triggerBtn && originalBtnText) {
+      triggerBtn.disabled = false;
+      triggerBtn.innerHTML = originalBtnText;
+    }
   }
 }
 
 // ── Verify OTP ──
 async function handleOtpVerify(e) {
   e.preventDefault();
+  clearAuthAlert();
   const codeRaw = document.getElementById('otp-code').value;
   const emailDisplay = document.getElementById('otp-email-display').textContent;
   const code = sanitizeText(codeRaw, 6);
 
   if (!VALIDATORS.otp(code)) {
+    showAuthAlert('Code must be exactly 6 digits.');
     showToast('Code must be exactly 6 digits.', 'error');
     return;
   }
@@ -582,7 +639,7 @@ async function handleOtpVerify(e) {
   const submitBtn = e.target.querySelector('button[type="submit"]');
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Verifying…';
+    submitBtn.innerHTML = '<span class="btn-spinner"></span> Verifying…';
   }
 
   try {
@@ -614,7 +671,9 @@ async function handleOtpVerify(e) {
     // loadCurrentUser is triggered automatically by onAuthStateChange listener
   } catch (err) {
     console.error('OTP verify failed:', err);
-    showToast(err.message || 'Invalid or expired code. Please try again.', 'error');
+    const userMsg = err.message || 'Invalid or expired code. Please try again.';
+    showAuthAlert(userMsg, 'error');
+    showToast(userMsg, 'error');
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
