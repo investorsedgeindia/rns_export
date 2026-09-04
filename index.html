@@ -291,8 +291,11 @@
 
         <!-- OTP VERIFICATION FORM -->
         <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
-          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-4); text-align:center;">
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-2); text-align:center;">
             Enter the 6-digit code sent to<br /><strong id="otp-email-display"></strong>
+          </p>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-muted); margin-bottom: var(--sp-4); text-align:center;">
+            💡 You can enter the code below, or click the link in the email to log in directly.
           </p>
           <div class="form-group">
             <label for="otp-code">Verification Code</label>

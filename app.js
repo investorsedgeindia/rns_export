@@ -103,6 +103,7 @@ async function restoreSession() {
 function initAuthListener() {
   supabaseClient.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
+      closeAuth();
       await loadCurrentUser(session.user.id);
     } else if (event === 'SIGNED_OUT') {
       isLoggedIn = false;
@@ -639,13 +640,26 @@ async function handleOtpVerify(e) {
   }
 
   try {
-    const { data, error } = await supabaseClient.auth.verifyOtp({
+    let result = await supabaseClient.auth.verifyOtp({
       email: emailDisplay,
       token: code,
       type: 'email',
     });
 
-    if (error) throw error;
+    // Fallback: if 'email' token type fails, try 'signup' in case Supabase treated it as a new signup confirmation
+    if (result.error && (result.error.message?.includes('expired') || result.error.message?.includes('invalid'))) {
+      const fallbackResult = await supabaseClient.auth.verifyOtp({
+        email: emailDisplay,
+        token: code,
+        type: 'signup',
+      });
+      if (!fallbackResult.error) {
+        result = fallbackResult;
+      }
+    }
+
+    if (result.error) throw result.error;
+    const { data } = result;
 
     // On first sign-in, ensure a customers row exists with profile data
     if (data?.user && pendingProfile) {
