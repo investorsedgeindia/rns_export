@@ -1,5 +1,5 @@
 -- =============================================================
--- NutLux — Supabase Database Schema + Row Level Security
+-- RNS Dryfruits — Supabase Database Schema + Row Level Security
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- =============================================================
 

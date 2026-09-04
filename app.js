@@ -1,5 +1,5 @@
 /* ============================================
-   NutLux — App Logic (Supabase Edition)
+   RNS Dryfruits — App Logic (Supabase Edition)
    ============================================ */
 
 // ── Supabase Configuration ──
@@ -7,7 +7,7 @@ const SUPABASE_CONFIG = window.SUPABASE_CONFIG || {};
 
 if (!SUPABASE_CONFIG.url || !SUPABASE_CONFIG.anonKey) {
   console.error(
-    '[NutLux] Supabase config missing.\n' +
+    '[RNS Dryfruits] Supabase config missing.\n' +
     'Create a config.js file based on config.example.js with your real keys.\n' +
     'See the README or config.example.js for instructions.'
   );
@@ -26,7 +26,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storage: window.localStorage,
-    storageKey: 'nutlux-auth',
+    storageKey: 'rns-dryfruits-auth',
   },
 });
 
@@ -778,7 +778,7 @@ async function handleNewsletter(e) {
     console.warn('Newsletter save skipped:', err.message);
   }
 
-  showToast('Welcome to the NutLux family! Check your inbox for 15% off 🎁', 'success');
+  showToast('Welcome to the RNS Dryfruits family! Check your inbox for 15% off 🎁', 'success');
   document.getElementById('newsletter-email').value = '';
 }
 
