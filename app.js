@@ -402,6 +402,14 @@ async function handleCheckout() {
     closeCart();
     await renderOrders();
     document.getElementById('orders').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // ── Send order confirmation email via Edge Function ──
+    // This is a best-effort call — if it fails, the order is still placed.
+    try {
+      await sendOrderConfirmationEmail(data, currentUser);
+    } catch (emailErr) {
+      console.warn('Order confirmation email failed (non-critical):', emailErr);
+    }
   } catch (err) {
     console.error('Checkout failed:', err);
     showToast(err.message || 'Could not place order. Please try again.', 'error');
@@ -595,7 +603,7 @@ async function requestOtp(email, profileData = null, triggerBtn = null) {
       if (msg.includes('signups not allowed') || msg.includes('signup_disabled')) {
         userMsg = 'New signups are currently disabled in Supabase. Contact support.';
       } else if (msg.includes('rate limit') || msg.includes('over_email_send_rate_limit') || msg.includes('email rate')) {
-        userMsg = 'Email rate limit reached! Supabase free default mailer allows only 3-4 emails/hr. Please configure Custom SMTP (Resend) in your Supabase project.';
+        userMsg = 'Too many login attempts. Please wait a few minutes and try again, or contact support.';
       }
       showAuthAlert(userMsg, 'error');
       showToast(userMsg, 'error');
@@ -866,6 +874,45 @@ function showToast(message, type = 'info') {
     toast.classList.add('removing');
     setTimeout(() => toast.remove(), 300);
   }, 3500);
+}
+
+// ── Order Confirmation Email ──
+// Calls a Supabase Edge Function that sends a confirmation email via Google SMTP.
+// The Edge Function name is 'send-order-email' — deploy it from supabase/functions/.
+async function sendOrderConfirmationEmail(order, customer) {
+  // Check if Edge Functions are reachable (skips gracefully if not deployed)
+  const fnUrl = `${SUPABASE_URL}/functions/v1/send-order-email`;
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (!session?.access_token) return;
+
+  const items = Array.isArray(order.items) ? order.items : [];
+  const itemLines = items.map(it =>
+    `• ${it.name} × ${it.qty} — ₹${(it.price * it.qty).toLocaleString('en-IN')}`
+  ).join('\n');
+
+  const response = await fetch(fnUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify({
+      orderId: order.id,
+      orderShortId: order.id.slice(0, 8).toUpperCase(),
+      customerName: customer.name || customer.email,
+      customerEmail: customer.email,
+      items: itemLines,
+      total: Number(order.total).toLocaleString('en-IN'),
+      status: order.status || 'processing',
+      createdAt: order.created_at,
+    }),
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Edge Function responded ${response.status}: ${errText}`);
+  }
+  console.log('[Order email] Confirmation sent for order', order.id.slice(0, 8).toUpperCase());
 }
 
 // ── Newsletter ──
