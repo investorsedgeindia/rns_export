@@ -440,10 +440,53 @@ function clearAuthAlert() {
 }
 
 // ── Auth UI ──
+function switchAuthTab(tabName, tabEl) {
+  // Toggle active state on tab buttons (if present in DOM)
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  if (tabEl) tabEl.classList.add('active');
+
+  // Show the corresponding form; this app only has login + OTP forms
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  const targetForm = tabName === 'register' ? document.getElementById('register-form') : document.getElementById('login-form');
+  if (targetForm) targetForm.classList.add('active');
+}
+
+function toggleAccountDropdown() {
+  const menu = document.getElementById('account-dropdown-menu');
+  if (!menu) return;
+  const isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : 'block';
+  const btn = document.getElementById('account-btn');
+  if (btn) btn.setAttribute('aria-expanded', String(!isOpen));
+}
+
+function closeAccountDropdown() {
+  const menu = document.getElementById('account-dropdown-menu');
+  if (menu) menu.style.display = 'none';
+  const btn = document.getElementById('account-btn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+
+function scrollToOrders() {
+  const orders = document.getElementById('orders');
+  if (orders) orders.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function handleSignOut() {
+  try {
+    await supabaseClient.auth.signOut();
+    showToast('Signed out successfully', 'info');
+  } catch (err) {
+    console.error('Sign out failed:', err);
+    showToast('Could not sign out. Please try again.', 'error');
+  }
+}
+
 function openAuth() {
   clearAuthAlert();
   document.getElementById('auth-overlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  // Ensure login form is shown (safe no-op if tabs absent)
   switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
 
@@ -652,6 +695,14 @@ function updateAuthUI() {
   const ordersSection = document.getElementById('orders');
   const ordersLoggedOut = document.getElementById('orders-logged-out');
   const ordersList = document.getElementById('orders-list');
+  const dropdownMenu = document.getElementById('account-dropdown-menu');
+  const dropdownHeader = document.getElementById('account-dropdown-header');
+  const accountName = document.getElementById('account-name');
+  const accountEmail = document.getElementById('account-email');
+  const accountAvatar = document.getElementById('account-avatar');
+  const accountOrdersLink = document.getElementById('account-orders-link');
+  const accountSignoutBtn = document.getElementById('account-signout-btn');
+  const accountSigninLink = document.getElementById('account-signin-link');
 
   if (isLoggedIn && currentUser) {
     const initial = (currentUser.name || currentUser.email || '?').charAt(0).toUpperCase();
@@ -659,12 +710,18 @@ function updateAuthUI() {
     accountBtn.style.background = 'var(--grad-gold)';
     accountBtn.style.color = 'var(--clr-text-inverse)';
     accountBtn.title = currentUser.email || '';
-    accountBtn.onclick = async () => {
-      if (confirm('Sign out?')) {
-        await supabaseClient.auth.signOut();
-        showToast('Signed out successfully', 'info');
-      }
-    };
+    accountBtn.onclick = toggleAccountDropdown;
+    accountBtn.setAttribute('aria-expanded', 'false');
+
+    if (dropdownHeader) dropdownHeader.style.display = 'flex';
+    if (accountAvatar) accountAvatar.textContent = initial;
+    if (accountName) accountName.textContent = currentUser.name || currentUser.email.split('@')[0];
+    if (accountEmail) accountEmail.textContent = currentUser.email;
+    if (accountOrdersLink) accountOrdersLink.style.display = 'flex';
+    if (accountSignoutBtn) accountSignoutBtn.style.display = 'flex';
+    if (accountSigninLink) accountSigninLink.style.display = 'none';
+    if (dropdownMenu) dropdownMenu.style.display = 'none';
+
     ordersSection.classList.add('visible');
     ordersLoggedOut.style.display = 'none';
     ordersList.style.display = 'flex';
@@ -674,6 +731,14 @@ function updateAuthUI() {
     accountBtn.style.color = '';
     accountBtn.title = '';
     accountBtn.onclick = openAuth;
+    accountBtn.setAttribute('aria-expanded', 'false');
+
+    if (dropdownHeader) dropdownHeader.style.display = 'none';
+    if (accountOrdersLink) accountOrdersLink.style.display = 'none';
+    if (accountSignoutBtn) accountSignoutBtn.style.display = 'none';
+    if (accountSigninLink) accountSigninLink.style.display = 'flex';
+    if (dropdownMenu) dropdownMenu.style.display = 'none';
+
     ordersSection.classList.remove('visible');
     ordersLoggedOut.style.display = 'block';
     ordersList.style.display = 'none';
@@ -946,10 +1011,19 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeCart();
     closeAuth();
+    closeAccountDropdown();
   }
 });
 
 // ── Close auth overlay on click outside ──
 document.getElementById('auth-overlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAuth();
+});
+
+// ── Close account dropdown on click outside ──
+document.addEventListener('click', (e) => {
+  const dropdown = document.getElementById('account-dropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    closeAccountDropdown();
+  }
 });
