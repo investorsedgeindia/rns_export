@@ -80,8 +80,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSmoothScroll();
   initAuthListener();
 
-  // Restore session on page load
+  // Restore session on page load, then always sync the auth UI so the
+  // account button is wired up even when there is no active session.
   await restoreSession();
+  updateAuthUI();
 });
 
 // ── Auth: Session restoration & listener ──
