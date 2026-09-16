@@ -9,10 +9,18 @@ create table if not exists public.customers (
   id          uuid primary key references auth.users(id) on delete cascade,
   email       text not null,
   name        text not null check (char_length(name) between 2 and 100),
-  phone       text check (phone is null or phone ~ '^[0-9+\-\s\(\)]{7,15}$'),
+  phone       text check (phone is null or phone = '' or phone ~ '^[0-9+\-\s\(\)]{7,15}$'),
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
+
+-- Idempotent migration: relax the phone CHECK so empty strings are allowed.
+-- Older versions of this schema only allowed NULL, which broke email-only
+-- logins because the app was sending phone: '' (empty string).
+alter table public.customers
+  drop constraint if exists customers_phone_check,
+  add constraint customers_phone_check
+    check (phone is null or phone = '' or phone ~ '^[0-9+\-\s\(\)]{7,15}$');
 
 create index if not exists customers_email_idx on public.customers (lower(email));
 

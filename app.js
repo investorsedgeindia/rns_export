@@ -132,14 +132,20 @@ async function loadCurrentUser(userId) {
       // (existing user from before phone was collected). Try to populate from metadata.
       const { data: { user } } = await supabaseClient.auth.getUser();
       const meta = user?.user_metadata || {};
+      const customerRow = {
+        id: userId,
+        email: user.email,
+        name: sanitizeText(meta.name || user.email.split('@')[0], 100),
+      };
+      // Only include phone if it's a real, non-empty value — omitting it lets
+      // the DB column default / NULL constraint apply, avoiding a CHECK
+      // violation (e.g. customers_phone_check) when no phone is provided.
+      const phoneVal = sanitizeText(meta.phone, 15);
+      if (phoneVal) customerRow.phone = phoneVal;
+
       const { error: insertErr } = await supabaseClient
         .from('customers')
-        .insert({
-          id: userId,
-          email: user.email,
-          name: sanitizeText(meta.name || user.email.split('@')[0], 100),
-          phone: sanitizeText(meta.phone || null, 15),
-        });
+        .insert(customerRow);
       if (insertErr && insertErr.code !== '23505') throw insertErr;
       await loadCurrentUser(userId);
     }
