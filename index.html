@@ -256,15 +256,11 @@
   <div class="auth-overlay" id="auth-overlay">
     <div class="auth-modal" style="position:relative;">
       <button class="auth-close" onclick="closeAuth()">✕</button>
-      <div class="auth-modal-header">
+<div class="auth-modal-header">
         <a href="#" class="nav-brand">
           <div class="nav-brand-icon">🥜</div>
-<div class="nav-brand-text">Bandhuprem Foods</div>
+          <div class="nav-brand-text">Bandhuprem Foods</div>
         </a>
-      </div>
-      <div class="auth-tabs">
-        <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login', this)">Sign In</button>
-        <button class="auth-tab" data-tab="register" onclick="switchAuthTab('register', this)">Create Account</button>
       </div>
       <div class="auth-form-container">
         <!-- INLINE ALERT BANNER -->
@@ -287,38 +283,7 @@
             <button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button>
             <button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button>
           </div>
-        </form>
-
-        <!-- REGISTER FORM -->
-        <form class="auth-form" id="register-form" onsubmit="handleRegister(event)">
-          <p style="font-size: var(--fs-xs); color: var(--clr-gold); margin-bottom: var(--sp-2); text-align: center;">
-            🔒 <strong>Passwordless Sign Up</strong> — We'll email you a 6-digit OTP. No password needed!
-          </p>
-          <div class="form-group">
-            <label for="register-name">Full Name</label>
-            <input type="text" id="register-name" placeholder="Enter your full name" required autocomplete="name"
-              maxlength="100" pattern="[A-Za-z\s\.\-']{2,100}" title="Letters, spaces, dots, hyphens only" />
-          </div>
-          <div class="form-group">
-            <label for="register-email">Email</label>
-            <input type="email" id="register-email" placeholder="Enter your email" required autocomplete="email"
-              maxlength="254" />
-          </div>
-          <div class="form-group">
-            <label for="register-phone">Phone Number</label>
-            <input type="tel" id="register-phone" placeholder="10-digit phone number" required autocomplete="tel"
-              maxlength="15" pattern="[0-9+\-\s\(\)]{7,15}" title="7-15 digits, may include + - ( ) spaces" />
-          </div>
-          <label class="form-checkbox">
-            <input type="checkbox" required id="register-terms" /> I agree to the Terms &amp; Privacy Policy
-          </label>
-          <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
-          <div class="auth-divider">or continue with</div>
-          <div class="social-login-btns">
-            <button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button>
-            <button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button>
-          </div>
-        </form>
+</form>
 
         <!-- OTP VERIFICATION FORM -->
         <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">

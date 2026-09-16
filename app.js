@@ -48,7 +48,6 @@ let cart = [];
 let showcaseQty = 1;
 let isLoggedIn = false;
 let currentUser = null;
-let pendingProfile = null; // { name, phone } saved between register & OTP verify
 let otpCooldownTimer = null;
 
 // ── Input Validation / Sanitization Helpers ──
@@ -452,23 +451,12 @@ function closeAuth() {
   clearAuthAlert();
   document.getElementById('auth-overlay').classList.remove('open');
   document.body.style.overflow = '';
-  pendingProfile = null;
-}
-
-function switchAuthTab(tab, btn) {
-  clearAuthAlert();
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-
-  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-  document.getElementById(`${tab}-form`).classList.add('active');
 }
 
 function showOtpForm(email) {
   clearAuthAlert();
   document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
   document.getElementById('otp-form').classList.add('active');
-  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
   document.getElementById('otp-email-display').textContent = email;
   document.getElementById('otp-code').value = '';
   // Scroll modal to top in case it scrolled during form filling
@@ -480,8 +468,8 @@ function showOtpForm(email) {
 function backToAuth(e) {
   e.preventDefault();
   clearAuthAlert();
-  pendingProfile = null;
-  switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+  document.getElementById('login-form').classList.add('active');
 }
 
 let otpSecondsLeft = 0;
@@ -509,7 +497,7 @@ function startOtpCooldown(seconds) {
   otpCooldownTimer = setInterval(tick, 1000);
 }
 
-// ── Login (existing user, email OTP) ──
+// ── Login (Email OTP - works for both new & existing users) ──
 async function handleLogin(e) {
   e.preventDefault();
   clearAuthAlert();
@@ -524,51 +512,11 @@ async function handleLogin(e) {
     return;
   }
 
-  pendingProfile = null;
-  await requestOtp(email, null, submitBtn);
-}
-
-// ── Register (collects name+phone, then sends OTP) ──
-async function handleRegister(e) {
-  e.preventDefault();
-  clearAuthAlert();
-  const form = e.target;
-  const submitBtn = form.querySelector('button[type="submit"]');
-  const nameRaw = document.getElementById('register-name').value;
-  const emailRaw = document.getElementById('register-email').value;
-  const phoneRaw = document.getElementById('register-phone').value;
-  const termsChecked = document.getElementById('register-terms')?.checked;
-
-  const name = sanitizeText(nameRaw, 100);
-  const email = sanitizeText(emailRaw, 254).toLowerCase();
-  const phone = sanitizeText(phoneRaw, 15);
-
-  if (!name || !VALIDATORS.name(name)) {
-    showAuthAlert('Name must be 2-100 letters, spaces, dots or hyphens.');
-    showToast('Name must be 2-100 letters, spaces, dots or hyphens.', 'error');
-    return;
-  }
-  if (!email || !VALIDATORS.email(email)) {
-    showAuthAlert('Please enter a valid email address.');
-    showToast('Please enter a valid email address.', 'error');
-    return;
-  }
-  if (!phone || !VALIDATORS.phone(phone)) {
-    showAuthAlert('Phone must be 7-15 digits (e.g. 9876543210).');
-    showToast('Phone must be 7-15 digits (with optional + - ( ) spaces).', 'error');
-    return;
-  }
-  if (!termsChecked) {
-    showAuthAlert('Please agree to the Terms & Privacy Policy to continue.');
-    return;
-  }
-
-  pendingProfile = { name, phone };
-  await requestOtp(email, { name, phone }, submitBtn);
+  await requestOtp(email, submitBtn);
 }
 
 // ── Send OTP via Supabase ──
-async function requestOtp(email, profileData = null, triggerBtn = null) {
+async function requestOtp(email, triggerBtn = null) {
   const originalBtnText = triggerBtn ? triggerBtn.innerHTML : null;
   if (triggerBtn) {
     triggerBtn.disabled = true;
@@ -581,14 +529,6 @@ async function requestOtp(email, profileData = null, triggerBtn = null) {
     };
     if (window.location.origin && window.location.origin !== 'null' && window.location.protocol.startsWith('http')) {
       options.emailRedirectTo = window.location.origin;
-    }
-
-    // Pass profile data through user_metadata so we can populate customers table on first sign-in
-    if (profileData) {
-      options.data = {
-        name: profileData.name,
-        phone: profileData.phone,
-      };
     }
 
     const { data, error } = await supabaseClient.auth.signInWithOtp({
@@ -669,21 +609,6 @@ async function handleOtpVerify(e) {
     if (result.error) throw result.error;
     const { data } = result;
 
-    // On first sign-in, ensure a customers row exists with profile data
-    if (data?.user && pendingProfile) {
-      const { error: upsertErr } = await supabaseClient
-        .from('customers')
-        .upsert({
-          id: data.user.id,
-          email: data.user.email,
-          name: pendingProfile.name,
-          phone: pendingProfile.phone,
-        }, { onConflict: 'id' });
-
-      if (upsertErr && upsertErr.code !== '23505') throw upsertErr;
-      pendingProfile = null;
-    }
-
     closeAuth();
     showToast('Signed in successfully!', 'success');
     // loadCurrentUser is triggered automatically by onAuthStateChange listener
@@ -704,7 +629,7 @@ async function resendOtp(e) {
   e.preventDefault();
   if (otpSecondsLeft > 0) return;
   const email = document.getElementById('otp-email-display').textContent;
-  await requestOtp(email, pendingProfile);
+  await requestOtp(email);
 }
 
 // ── OAuth (Google) ──
