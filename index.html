@@ -31,9 +31,30 @@
         <button class="nav-action-btn" id="search-btn" aria-label="Search">
           🔍
         </button>
-        <button class="nav-action-btn" id="account-btn" aria-label="Account" onclick="openAuth()">
-          👤
-        </button>
+        <div class="account-dropdown" id="account-dropdown">
+          <button class="nav-action-btn account-btn-trigger" id="account-btn" aria-label="Account" aria-expanded="false" aria-haspopup="true">
+            👤
+          </button>
+          <div class="account-dropdown-menu" id="account-dropdown-menu" role="menu" style="display: none;">
+            <div class="account-dropdown-header" id="account-dropdown-header" style="display: none;">
+              <div class="account-avatar" id="account-avatar">👤</div>
+              <div class="account-info">
+                <span class="account-name" id="account-name">Guest</span>
+                <span class="account-email" id="account-email">Sign in to view orders</span>
+              </div>
+            </div>
+            <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
+            <a href="#orders" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); scrollToOrders();">
+              📦 My Orders
+            </a>
+            <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">
+              🚪 Sign Out
+            </button>
+            <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem" onclick="closeAccountDropdown(); openAuth();">
+              🔐 Sign In / Register
+            </a>
+          </div>
+        </div>
         <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="openCart()">
           🛒
           <span class="badge" id="cart-badge">0</span>
