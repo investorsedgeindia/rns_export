@@ -35,12 +35,71 @@ create table if not exists public.orders (
                  check (status in ('processing','shipped','delivered','cancelled')),
   progress     int  not null default 33
                  check (progress between 0 and 100),
+  -- ── ShipGlobal Logistics Integration ──
+  shipping_country      text,
+  shipping_postcode     text,
+  shipping_service      text,
+  shipping_cost         numeric(10,2) check (shipping_cost >= 0),
+  shipping_currency     text,
+  shipglobal_invoice_no        text,
+  shipglobal_order_reference   text,
+  shipglobal_tracking          text,
+  shipglobal_service           text,
+  shipglobal_status            text,
+  shipglobal_status_code       text,
+  shipglobal_events            jsonb default '[]'::jsonb check (jsonb_typeof(shipglobal_events) = 'array'),
+  shipglobal_label             text,
+  shipglobal_last_synced_at    timestamptz,
+  shipglobal_created           boolean not null default false,
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 );
 
+-- Idempotent migration: add ShipGlobal columns to existing orders tables.
+alter table public.orders
+  add column if not exists shipping_country text,
+  add column if not exists shipping_postcode text,
+  add column if not exists shipping_service text,
+  add column if not exists shipping_cost numeric(10,2),
+  add column if not exists shipping_currency text,
+  add column if not exists shipglobal_invoice_no text,
+  add column if not exists shipglobal_order_reference text,
+  add column if not exists shipglobal_tracking text,
+  add column if not exists shipglobal_service text,
+  add column if not exists shipglobal_status text,
+  add column if not exists shipglobal_status_code text,
+  add column if not exists shipglobal_events jsonb default '[]'::jsonb,
+  add column if not exists shipglobal_label text,
+  add column if not exists shipglobal_last_synced_at timestamptz,
+  add column if not exists shipglobal_created boolean not null default false;
+
 create index if not exists orders_customer_idx
   on public.orders (customer_id, created_at desc);
+
+create index if not exists orders_shipglobal_tracking_idx
+  on public.orders (shipglobal_tracking) where shipglobal_tracking is not null;
+
+create index if not exists orders_shipglobal_tracking_idx
+  on public.orders (shipglobal_tracking) where shipglobal_tracking is not null;
+
+-- ── Shipping Quotes (ShipGlobal Rate Calculator) ──
+create table if not exists public.shipping_quotes (
+  id              uuid primary key default gen_random_uuid(),
+  customer_id     uuid references public.customers(id) on delete cascade,
+  country_iso2    text not null,
+  postcode        text not null,
+  package_weight  numeric(10,3) not null check (package_weight > 0),
+  currency        text not null,
+  services        jsonb not null check (jsonb_typeof(services) = 'array'),
+  expires_at      timestamptz not null,
+  created_at      timestamptz not null default now()
+);
+
+create index if not exists shipping_quotes_customer_idx
+  on public.shipping_quotes (customer_id, created_at desc);
+
+create index if not exists shipping_quotes_destination_idx
+  on public.shipping_quotes (country_iso2, postcode);
 
 -- 3. NEWSLETTER SUBSCRIBERS TABLE (optional)
 create table if not exists public.newsletter_subscribers (
@@ -91,6 +150,25 @@ create policy "orders_insert_own"
     and jsonb_array_length(items) > 0
     and total >= 0
   );
+
+-- SHIPPING QUOTES: users can only see their own quotes; inserts are
+-- restricted to the authenticated customer. Quotes are short-lived (TTL).
+alter table public.shipping_quotes enable row level security;
+
+drop policy if exists "shipping_quotes_select_own" on public.shipping_quotes;
+create policy "shipping_quotes_select_own"
+  on public.shipping_quotes for select
+  using (auth.uid() = customer_id);
+
+drop policy if exists "shipping_quotes_insert_own" on public.shipping_quotes;
+create policy "shipping_quotes_insert_own"
+  on public.shipping_quotes for insert
+  with check (auth.uid() = customer_id);
+
+drop policy if exists "shipping_quotes_delete_own" on public.shipping_quotes;
+create policy "shipping_quotes_delete_own"
+  on public.shipping_quotes for delete
+  using (auth.uid() = customer_id);
 
 -- NEWSLETTER: anyone (even unauthenticated) can subscribe, but
 -- no one can read the list (prevents email harvesting).

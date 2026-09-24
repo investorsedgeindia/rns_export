@@ -33,6 +33,7 @@ const PRODUCTS = [
     name: 'Plain Whole Cashews',
     category: 'cashew',
     weight: '1kg',
+    weightKg: 1,
     price: 900,
     originalPrice: null,
     rating: 4.9,
@@ -49,6 +50,11 @@ let showcaseQty = 1;
 let isLoggedIn = false;
 let currentUser = null;
 let otpCooldownTimer = null;
+
+// ── Shipping / Logistics State (ShipGlobal) ──
+let shippingQuote = null;       // Latest rate quote response
+let selectedShippingService = null; // Selected service object from quote
+let shippingQuoteTimer = null;  // Debounce timer for quote refresh
 
 // ── Input Validation / Sanitization Helpers ──
 const VALIDATORS = {
@@ -306,9 +312,24 @@ function updateCartUI() {
   document.getElementById('cart-subtotal').textContent = `₹${subtotal.toLocaleString('en-IN')}`;
   document.getElementById('cart-total').textContent = `₹${subtotal.toLocaleString('en-IN')}`;
 
+  // Shipping quote display
+  const shippingEl = document.getElementById('cart-shipping');
+  if (shippingEl) {
+    if (selectedShippingService && shippingQuote) {
+      const shippingCost = Number(selectedShippingService.subtotal_fee || selectedShippingService.price?.logistic_fee || 0);
+      shippingEl.textContent = `${shippingQuote.currency || 'INR'} ${shippingCost.toLocaleString('en-IN')}`;
+      document.getElementById('cart-total').textContent = `${shippingQuote.currency || 'INR'} ${(subtotal + shippingCost).toLocaleString('en-IN')}`;
+    } else if (shippingQuote) {
+      shippingEl.textContent = 'Select a service';
+    } else {
+      shippingEl.textContent = 'Not calculated';
+    }
+  }
+
   const isEmpty = cart.length === 0;
   document.getElementById('cart-empty').style.display = isEmpty ? 'flex' : 'none';
   document.getElementById('cart-footer').style.display = isEmpty ? 'none' : 'block';
+  document.getElementById('shipping-quote').style.display = isEmpty ? 'none' : 'block';
 }
 
 function renderCartItems() {
@@ -355,6 +376,138 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+// ── Shipping: Get live quote from ShipGlobal ──
+async function getShippingQuote() {
+  if (!(await requireAuth())) {
+    return;
+  }
+
+  const countryEl = document.getElementById('shipping-country');
+  const postcodeEl = document.getElementById('shipping-postcode');
+  const noteEl = document.getElementById('shipping-note');
+  const optionsEl = document.getElementById('shipping-options');
+  const btn = document.getElementById('get-quote-btn');
+
+  const country = countryEl.value;
+  const postcode = sanitizeText(postcodeEl.value, 20);
+
+  if (!country) {
+    noteEl.textContent = 'Please select a destination country.';
+    noteEl.style.display = 'block';
+    return;
+  }
+  if (!postcode) {
+    noteEl.textContent = 'Please enter a postal code.';
+    noteEl.style.display = 'block';
+    return;
+  }
+
+  const totalWeightKg = cart.reduce((sum, item) => sum + (Number(item.weightKg) || 1) * Number(item.qty), 0);
+  if (totalWeightKg <= 0) {
+    noteEl.textContent = 'Could not calculate package weight. Please try again.';
+    noteEl.style.display = 'block';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-spinner"></span> Getting quote…';
+  noteEl.style.display = 'none';
+  optionsEl.style.display = 'none';
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/get-shipping-rates`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        package_weight: totalWeightKg,
+        country_iso_code_2: country,
+        postcode,
+      }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not get shipping quote');
+    }
+
+    shippingQuote = result;
+    selectedShippingService = null;
+    renderShippingOptions(result);
+    showToast('Shipping quote received!', 'success');
+  } catch (err) {
+    console.error('getShippingQuote error:', err);
+    noteEl.textContent = err.message || 'Could not get shipping quote. Please try again.';
+    noteEl.style.display = 'block';
+    showToast(noteEl.textContent, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = 'Get Shipping Quote';
+    }
+  }
+}
+
+function renderShippingOptions(quote) {
+  const optionsEl = document.getElementById('shipping-options');
+  if (!optionsEl) return;
+
+  const services = quote.services || [];
+  if (!services.length) {
+    optionsEl.innerHTML = '<p style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">No shipping services available for this destination.</p>';
+    optionsEl.style.display = 'block';
+    return;
+  }
+
+  optionsEl.innerHTML = services.map((service, index) => `
+    <label class="shipping-option ${index === 0 ? 'selected' : ''}">
+      <input type="radio" name="shipping-service" value="${index}" ${index === 0 ? 'checked' : ''} />
+      <div class="shipping-option-info">
+        <div class="shipping-option-title">${escapeHtml(service.title)}</div>
+        <div class="shipping-option-meta">
+          ${escapeHtml(service.transit_time || 'Transit time not specified')}
+          ${service.notes ? `<br />${escapeHtml(service.notes)}` : ''}
+        </div>
+      </div>
+      <div class="shipping-option-price">
+        <strong>${quote.currency || 'INR'} ${Number(service.subtotal_fee || service.price?.logistic_fee || 0).toLocaleString('en-IN')}</strong>
+        <span>DDP</span>
+      </div>
+    </label>
+  `).join('');
+
+  optionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
+    radio.addEventListener('change', () => {
+      const index = Number(radio.value);
+      selectedShippingService = services[index];
+      optionsEl.querySelectorAll('.shipping-option').forEach(opt => opt.classList.remove('selected'));
+      radio.closest('.shipping-option').classList.add('selected');
+      updateCartUI();
+    });
+  });
+
+  // Default to first service
+  selectedShippingService = services[0];
+  optionsEl.style.display = 'flex';
+  updateCartUI();
+}
+
+// ── Shipping: helper to compute package dimensions from cart ──
+function getPackageDetails() {
+  const totalWeightKg = cart.reduce((sum, item) => sum + (Number(item.weightKg) || 1) * Number(item.qty), 0);
+  return {
+    weight: totalWeightKg,
+    length: 30,
+    breadth: 30,
+    height: 30,
+  };
+}
+
 // ── Checkout: insert order into DB ──
 async function handleCheckout() {
   // Verify session against Supabase before proceeding
@@ -368,7 +521,12 @@ async function handleCheckout() {
     return;
   }
 
-  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shippingCost = selectedShippingService && shippingQuote
+    ? Number(selectedShippingService.subtotal_fee || selectedShippingService.price?.logistic_fee || 0)
+    : 0;
+  const total = subtotal + shippingCost;
+
   const orderItems = cart.map(item => ({
     id: Number(item.id),
     name: sanitizeText(item.name, 100),
@@ -385,16 +543,18 @@ async function handleCheckout() {
   }
 
   try {
-    // Send items + claimed total for client UX display, but the DB
-    // trigger `aaa_recalc_totals` recomputes and OVERWRITES the total
-    // from the authoritative public.products table. Client price lies
-    // are silently corrected server-side.
+    // ── Insert order into Supabase ──
     const { data, error } = await supabaseClient
       .from('orders')
       .insert({
         customer_id: currentUser.id,
         items: orderItems,
         total: total,
+        shipping_country: document.getElementById('shipping-country')?.value || null,
+        shipping_postcode: sanitizeText(document.getElementById('shipping-postcode')?.value, 20) || null,
+        shipping_service: selectedShippingService?.title || null,
+        shipping_cost: shippingCost || null,
+        shipping_currency: shippingQuote?.currency || 'INR',
       })
       .select()
       .single();
@@ -402,8 +562,69 @@ async function handleCheckout() {
     if (error) throw error;
 
     const serverTotal = Number(data.total) || total;
-    showToast(`Order ${data.id.slice(0, 8).toUpperCase()} placed! Total: ₹${serverTotal.toLocaleString('en-IN')}`, 'success');
+
+    // ── Create ShipGlobal shipment if a shipping service was selected ──
+    let shipmentResult = null;
+    if (selectedShippingService && shippingQuote) {
+      try {
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        const customer = currentUser;
+        const packageInfo = getPackageDetails();
+
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/create-shipment`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            orderId: data.id,
+            service: selectedShippingService.title,
+            currency: shippingQuote.currency || 'USD',
+            customer: {
+              firstname: (customer.name || customer.email).split(' ')[0] || customer.email.split('@')[0],
+              lastname: (customer.name || customer.email).split(' ').slice(1).join(' ') || customer.email.split('@')[0],
+              mobile: customer.phone || '',
+              email: customer.email,
+              company: '',
+              address: 'Address not provided',
+              address2: '',
+              address3: '',
+              city: 'Not provided',
+              postcode: document.getElementById('shipping-postcode')?.value || '',
+              country: document.getElementById('shipping-country')?.value || '',
+              state: '',
+            },
+            package: packageInfo,
+            items: orderItems.map(item => ({
+              name: item.name,
+              quantity: item.qty,
+              unit_price: item.price,
+              hsn: '0801',
+              tax_rate: 0,
+              sku: '',
+            })),
+          }),
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+          shipmentResult = result;
+          showToast(`Shipment created! Tracking: ${result.tracking}`, 'success');
+        } else {
+          console.warn('[Checkout] Shipment creation failed:', result);
+          showToast('Order placed, but shipping label could not be created. We will follow up.', 'info');
+        }
+      } catch (shipmentErr) {
+        console.warn('[Checkout] Shipment creation exception:', shipmentErr);
+        showToast('Order placed, but shipping setup needs manual review.', 'info');
+      }
+    }
+
+    showToast(`Order ${data.id.slice(0, 8).toUpperCase()} placed! Total: ${shippingQuote?.currency || 'INR'} ${serverTotal.toLocaleString('en-IN')}`, 'success');
     cart = [];
+    shippingQuote = null;
+    selectedShippingService = null;
     updateCartUI();
     renderCartItems();
     closeCart();
@@ -766,7 +987,7 @@ async function renderOrders() {
   try {
     const { data, error } = await supabaseClient
       .from('orders')
-      .select('id, items, total, status, progress, created_at')
+      .select('id, items, total, status, progress, created_at, shipping_country, shipping_postcode, shipping_service, shipping_cost, shipping_currency, shipglobal_tracking, shipglobal_service, shipglobal_status, shipglobal_status_code, shipglobal_events, shipglobal_last_synced_at, shipglobal_created')
       .eq('customer_id', currentUser.id)
       .order('created_at', { ascending: false });
 
@@ -797,6 +1018,10 @@ function renderOrderCard(order) {
   const status = escapeHtml(order.status || 'processing');
   const total = Number(order.total) || 0;
   const shortId = order.id.slice(0, 8).toUpperCase();
+  const tracking = order.shipglobal_tracking || '';
+  const shipStatus = escapeHtml(order.shipglobal_status || '');
+  const shipService = escapeHtml(order.shipglobal_service || order.shipping_service || '');
+  const hasTracking = Boolean(tracking);
 
   const items = Array.isArray(order.items) ? order.items : [];
   const thumbs = items.map(it => `
@@ -808,6 +1033,30 @@ function renderOrderCard(order) {
   const itemLines = items.map(it => `
     <span style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(it.name)} × ${Number(it.qty)}</span>
   `).join('');
+
+  const trackingBlock = hasTracking ? `
+    <div class="order-tracking-info">
+      <div class="order-tracking-row">
+        <span class="order-tracking-label">ShipGlobal Tracking</span>
+        <span class="order-tracking-value">${escapeHtml(tracking)}</span>
+      </div>
+      ${shipService ? `<div class="order-tracking-row">
+        <span class="order-tracking-label">Service</span>
+        <span class="order-tracking-value">${shipService}</span>
+      </div>` : ''}
+      ${shipStatus ? `<div class="order-tracking-row">
+        <span class="order-tracking-label">Status</span>
+        <span class="order-tracking-value">${shipStatus}</span>
+      </div>` : ''}
+      <button class="btn btn-secondary btn-sm" onclick="openTracking('${escapeHtml(tracking)}')">
+        🚚 Track Shipment
+      </button>
+    </div>
+  ` : `
+    <div class="order-tracking-info order-tracking-pending">
+      <span>Shipping label will be generated after your order is processed.</span>
+    </div>
+  `;
 
   return `
     <div class="order-card">
@@ -844,12 +1093,153 @@ function renderOrderCard(order) {
           </div>
         </div>
 
+        ${trackingBlock}
+
         <div class="order-total">
-          Order Total: <strong>₹${total.toLocaleString('en-IN')}</strong>
+          Order Total: <strong>${escapeHtml(order.shipping_currency || 'INR')} ${total.toLocaleString('en-IN')}</strong>
         </div>
       </div>
     </div>
   `;
+}
+
+// ── Tracking Modal ──
+function openTracking(tracking) {
+  if (!tracking) return;
+  const overlay = document.getElementById('tracking-overlay');
+  if (overlay) overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  loadTracking(tracking);
+}
+
+function closeTracking() {
+  const overlay = document.getElementById('tracking-overlay');
+  if (overlay) overlay.classList.remove('open');
+  if (!document.getElementById('auth-overlay')?.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+}
+
+async function loadTracking(tracking) {
+  const content = document.getElementById('tracking-content');
+  if (!content) return;
+  content.innerHTML = '<p style="text-align:center; color: var(--clr-text-secondary);">Loading tracking details…</p>';
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/track-shipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ tracking }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not load tracking details');
+    }
+
+    renderTracking(result.data);
+  } catch (err) {
+    console.error('loadTracking error:', err);
+    content.innerHTML = `
+      <div style="text-align:center; padding: var(--sp-6);">
+        <p style="color: var(--clr-danger, #c0392b); font-weight: 600;">Could not load tracking details.</p>
+        <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(err.message || 'Please try again later.')}</p>
+      </div>
+    `;
+  }
+}
+
+function renderTracking(data) {
+  const content = document.getElementById('tracking-content');
+  if (!content) return;
+
+  const awbInfo = data.awbInfo || {};
+  const events = Array.isArray(data.awbEvents) ? data.awbEvents : [];
+  const tracking = awbInfo.awb_number || '';
+  const status = escapeHtml(awbInfo.awb_status || data.status || 'Unknown');
+  const destination = escapeHtml(awbInfo.awb_destination || '');
+  const lastMile = escapeHtml(awbInfo.partner_lastmile_display || '');
+  const lastMileUrl = awbInfo.partner_lastmile_tracking_url || '';
+
+  const eventsHtml = events.length ? events.map(event => `
+    <div class="tracking-event">
+      <div class="tracking-event-time">${escapeHtml(event.awb_history_datetime || '')}</div>
+      <div class="tracking-event-title">${escapeHtml(event.awb_history_comment || '')}</div>
+      <div class="tracking-event-location">${escapeHtml(event.awb_history_location || '')}${event.type ? ` · ${escapeHtml(event.type)}` : ''}</div>
+    </div>
+  `).join('') : '<p style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">No tracking events available yet.</p>';
+
+  content.innerHTML = `
+    <div class="tracking-summary">
+      <div class="tracking-summary-icon">📦</div>
+      <div class="tracking-summary-info">
+        <div class="tracking-summary-title">Tracking: ${escapeHtml(tracking)}</div>
+        <div class="tracking-summary-sub">
+          Status: <strong>${status}</strong><br />
+          ${destination ? `Destination: ${destination}<br />` : ''}
+          ${lastMile ? `Last-mile: ${lastMile}` : ''}
+        </div>
+      </div>
+    </div>
+    <h4 style="font-family: var(--font-display); font-size: var(--fs-md); margin-bottom: var(--sp-3);">Shipment Timeline</h4>
+    <div class="tracking-timeline">
+      ${eventsHtml}
+    </div>
+    ${lastMileUrl ? `<a href="${escapeHtml(lastMileUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width:100%;">🔗 Track with ${lastMile}</a>` : ''}
+    <button class="btn btn-primary tracking-label-btn" onclick="downloadShippingLabel('${escapeHtml(tracking)}')">
+      📄 Download Shipping Label
+    </button>
+  `;
+}
+
+async function downloadShippingLabel(tracking) {
+  const btn = document.querySelector('.tracking-label-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Generating label…';
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/get-shipping-label`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ tracking, label: true }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not download shipping label');
+    }
+
+    // The label is returned as a base64-encoded PDF
+    const link = document.createElement('a');
+    link.href = `data:application/pdf;base64,${result.label}`;
+    link.download = `ShipGlobal-Label-${tracking}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Shipping label downloaded!', 'success');
+  } catch (err) {
+    console.error('downloadShippingLabel error:', err);
+    showToast(err.message || 'Could not download shipping label.', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '📄 Download Shipping Label';
+    }
+  }
 }
 
 // ── Toast Notifications ──
@@ -1019,6 +1409,7 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeCart();
     closeAuth();
+    closeTracking();
     closeAccountDropdown();
   }
 });
@@ -1026,6 +1417,11 @@ document.addEventListener('keydown', (e) => {
 // ── Close auth overlay on click outside ──
 document.getElementById('auth-overlay').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) closeAuth();
+});
+
+// ── Close tracking overlay on click outside ──
+document.getElementById('tracking-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeTracking();
 });
 
 // ── Close account dropdown on click outside ──

@@ -235,6 +235,96 @@
         <p style="font-size: var(--fs-sm);">Browse our catalogue and add some premium nuts!</p>
       </div>
     </div>
+
+    <!-- ═══════ INTERNATIONAL SHIPPING QUOTE ═══════ -->
+    <div class="shipping-quote" id="shipping-quote" style="display:none;">
+      <div class="shipping-quote-header">
+        <h4>🌍 International Delivery</h4>
+        <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-1);">
+          Get a live DDP shipping quote for your destination
+        </p>
+      </div>
+      <div class="shipping-quote-form">
+        <div class="form-row">
+          <div class="form-group" style="flex:1;">
+            <label for="shipping-country">Destination Country</label>
+            <select id="shipping-country" required>
+              <option value="">Select country…</option>
+              <option value="US">United States</option>
+              <option value="GB">United Kingdom</option>
+              <option value="CA">Canada</option>
+              <option value="AU">Australia</option>
+              <option value="AE">United Arab Emirates</option>
+              <option value="SA">Saudi Arabia</option>
+              <option value="SG">Singapore</option>
+              <option value="NZ">New Zealand</option>
+              <option value="DE">Germany</option>
+              <option value="FR">France</option>
+              <option value="IT">Italy</option>
+              <option value="NL">Netherlands</option>
+              <option value="ES">Spain</option>
+              <option value="QA">Qatar</option>
+              <option value="KW">Kuwait</option>
+              <option value="OM">Oman</option>
+              <option value="BH">Bahrain</option>
+              <option value="JP">Japan</option>
+              <option value="KR">South Korea</option>
+              <option value="CH">Switzerland</option>
+              <option value="SE">Sweden</option>
+              <option value="NO">Norway</option>
+              <option value="DK">Denmark</option>
+              <option value="BE">Belgium</option>
+              <option value="AT">Austria</option>
+              <option value="IE">Ireland</option>
+              <option value="PT">Portugal</option>
+              <option value="GR">Greece</option>
+              <option value="PL">Poland</option>
+              <option value="CZ">Czech Republic</option>
+              <option value="HU">Hungary</option>
+              <option value="RO">Romania</option>
+              <option value="BG">Bulgaria</option>
+              <option value="HR">Croatia</option>
+              <option value="SI">Slovenia</option>
+              <option value="SK">Slovakia</option>
+              <option value="LT">Lithuania</option>
+              <option value="LV">Latvia</option>
+              <option value="EE">Estonia</option>
+              <option value="FI">Finland</option>
+              <option value="LU">Luxembourg</option>
+              <option value="MT">Malta</option>
+              <option value="CY">Cyprus</option>
+              <option value="IS">Iceland</option>
+              <option value="TR">Turkey</option>
+              <option value="IL">Israel</option>
+              <option value="ZA">South Africa</option>
+              <option value="BR">Brazil</option>
+              <option value="MX">Mexico</option>
+              <option value="AR">Argentina</option>
+              <option value="CL">Chile</option>
+              <option value="CO">Colombia</option>
+              <option value="PE">Peru</option>
+              <option value="TH">Thailand</option>
+              <option value="MY">Malaysia</option>
+              <option value="ID">Indonesia</option>
+              <option value="PH">Philippines</option>
+              <option value="VN">Vietnam</option>
+              <option value="IN">India</option>
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;">
+            <label for="shipping-postcode">Postal Code</label>
+            <input type="text" id="shipping-postcode" placeholder="e.g. 95134" required maxlength="20" />
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="getShippingQuote()" id="get-quote-btn">
+          Get Shipping Quote
+        </button>
+        <p class="shipping-note" id="shipping-note" style="display:none;"></p>
+      </div>
+
+      <div class="shipping-options" id="shipping-options" style="display:none;"></div>
+    </div>
+
     <div class="cart-footer" id="cart-footer" style="display:none;">
       <div class="cart-summary-row">
         <span>Subtotal</span>
@@ -251,6 +341,22 @@
       <button class="btn btn-primary btn-lg" onclick="handleCheckout()">Proceed to Checkout</button>
     </div>
   </aside>
+
+  <!-- ═══════ TRACKING MODAL ═══════ -->
+  <div class="auth-overlay" id="tracking-overlay">
+    <div class="auth-modal tracking-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeTracking()">✕</button>
+      <div class="auth-modal-header">
+        <a href="#" class="nav-brand">
+          <div class="nav-brand-icon">📦</div>
+          <div class="nav-brand-text">Track Your Order</div>
+        </a>
+      </div>
+      <div class="auth-form-container" id="tracking-content">
+        <p style="text-align:center; color: var(--clr-text-secondary);">Loading tracking details…</p>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══════ AUTH MODAL ═══════ -->
   <div class="auth-overlay" id="auth-overlay">
