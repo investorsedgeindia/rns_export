@@ -108,6 +108,18 @@ export function errorResponse(
   );
 }
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+export function getAdminClient() {
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const key =
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ||
+    Deno.env.get("SUPABASE_SERVICE_ROLE") ||
+    Deno.env.get("SUPABASE_ANON_KEY") ||
+    "";
+  return createClient(url, key);
+}
+
 export function parseJsonBody(req: Request): Promise<Record<string, unknown>> {
   return req.json() as Promise<Record<string, unknown>>;
 }

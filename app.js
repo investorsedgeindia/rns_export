@@ -494,6 +494,21 @@ function renderShippingOptions(quote) {
   // Default to first service
   selectedShippingService = services[0];
   optionsEl.style.display = 'flex';
+
+  const addressForm = document.getElementById('shipping-address-form');
+  if (addressForm) {
+    addressForm.style.display = 'block';
+    if (currentUser) {
+      const parts = (currentUser.name || '').trim().split(' ');
+      const firstNameInput = document.getElementById('shipping-first-name');
+      const lastNameInput = document.getElementById('shipping-last-name');
+      const phoneInput = document.getElementById('shipping-phone');
+      if (firstNameInput && !firstNameInput.value) firstNameInput.value = parts[0] || '';
+      if (lastNameInput && !lastNameInput.value) lastNameInput.value = parts.slice(1).join(' ') || parts[0] || '';
+      if (phoneInput && !phoneInput.value && currentUser.phone) phoneInput.value = currentUser.phone;
+    }
+  }
+
   updateCartUI();
 }
 
@@ -519,6 +534,55 @@ async function handleCheckout() {
   if (cart.length === 0) {
     showToast('Your cart is empty', 'error');
     return;
+  }
+
+  const shippingCountry = document.getElementById('shipping-country')?.value || '';
+  const shippingPostcode = sanitizeText(document.getElementById('shipping-postcode')?.value, 20) || '';
+  const firstName = sanitizeText(document.getElementById('shipping-first-name')?.value, 100);
+  const lastName = sanitizeText(document.getElementById('shipping-last-name')?.value, 100);
+  const address = sanitizeText(document.getElementById('shipping-address')?.value, 200);
+  const address2 = sanitizeText(document.getElementById('shipping-address2')?.value, 200);
+  const city = sanitizeText(document.getElementById('shipping-city')?.value, 100);
+  const state = sanitizeText(document.getElementById('shipping-state')?.value, 100);
+  const phone = sanitizeText(document.getElementById('shipping-phone')?.value, 30);
+
+  // If shipping service is selected, require delivery address
+  if (selectedShippingService && shippingQuote) {
+    if (!shippingCountry) {
+      showToast('Please select a destination country', 'error');
+      document.getElementById('shipping-country')?.focus();
+      return;
+    }
+    if (!shippingPostcode) {
+      showToast('Please enter a destination postal code', 'error');
+      document.getElementById('shipping-postcode')?.focus();
+      return;
+    }
+    if (!firstName || !lastName) {
+      showToast('Please enter recipient first and last name', 'error');
+      document.getElementById('shipping-first-name')?.focus();
+      return;
+    }
+    if (!address) {
+      showToast('Please enter street address for delivery', 'error');
+      document.getElementById('shipping-address')?.focus();
+      return;
+    }
+    if (!city) {
+      showToast('Please enter delivery city', 'error');
+      document.getElementById('shipping-city')?.focus();
+      return;
+    }
+    if (!state) {
+      showToast('Please enter delivery state / province', 'error');
+      document.getElementById('shipping-state')?.focus();
+      return;
+    }
+    if (!phone) {
+      showToast('Please enter recipient contact phone number', 'error');
+      document.getElementById('shipping-phone')?.focus();
+      return;
+    }
   }
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -550,8 +614,8 @@ async function handleCheckout() {
         customer_id: currentUser.id,
         items: orderItems,
         total: total,
-        shipping_country: document.getElementById('shipping-country')?.value || null,
-        shipping_postcode: sanitizeText(document.getElementById('shipping-postcode')?.value, 20) || null,
+        shipping_country: shippingCountry || null,
+        shipping_postcode: shippingPostcode || null,
         shipping_service: selectedShippingService?.title || null,
         shipping_cost: shippingCost || null,
         shipping_currency: shippingQuote?.currency || 'INR',
@@ -582,18 +646,18 @@ async function handleCheckout() {
             service: selectedShippingService.title,
             currency: shippingQuote.currency || 'USD',
             customer: {
-              firstname: (customer.name || customer.email).split(' ')[0] || customer.email.split('@')[0],
-              lastname: (customer.name || customer.email).split(' ').slice(1).join(' ') || customer.email.split('@')[0],
-              mobile: customer.phone || '',
+              firstname: firstName || (customer.name || customer.email).split(' ')[0] || customer.email.split('@')[0],
+              lastname: lastName || (customer.name || customer.email).split(' ').slice(1).join(' ') || customer.email.split('@')[0],
+              mobile: phone || customer.phone || '',
               email: customer.email,
               company: '',
-              address: 'Address not provided',
-              address2: '',
+              address: address,
+              address2: address2 || '',
               address3: '',
-              city: 'Not provided',
-              postcode: document.getElementById('shipping-postcode')?.value || '',
-              country: document.getElementById('shipping-country')?.value || '',
-              state: '',
+              city: city,
+              postcode: shippingPostcode,
+              country: shippingCountry,
+              state: state,
             },
             package: packageInfo,
             items: orderItems.map(item => ({
@@ -625,6 +689,8 @@ async function handleCheckout() {
     cart = [];
     shippingQuote = null;
     selectedShippingService = null;
+    const addressFormEl = document.getElementById('shipping-address-form');
+    if (addressFormEl) addressFormEl.style.display = 'none';
     updateCartUI();
     renderCartItems();
     closeCart();
@@ -1034,6 +1100,9 @@ function renderOrderCard(order) {
     <span style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(it.name)} × ${Number(it.qty)}</span>
   `).join('');
 
+  const isCancelled = order.status === 'cancelled' || Boolean(order.shipglobal_cancelled);
+  const isDelivered = order.status === 'delivered';
+
   const trackingBlock = hasTracking ? `
     <div class="order-tracking-info">
       <div class="order-tracking-row">
@@ -1048,9 +1117,22 @@ function renderOrderCard(order) {
         <span class="order-tracking-label">Status</span>
         <span class="order-tracking-value">${shipStatus}</span>
       </div>` : ''}
-      <button class="btn btn-secondary btn-sm" onclick="openTracking('${escapeHtml(tracking)}')">
-        🚚 Track Shipment
-      </button>
+      ${isCancelled ? `
+        <div style="margin-top: var(--sp-2); padding: var(--sp-2); background: rgba(192, 57, 43, 0.08); border-radius: var(--radius-sm); border-left: 3px solid var(--clr-danger, #c0392b);">
+          <span style="font-size: var(--fs-xs); color: var(--clr-danger, #c0392b); font-weight: 600;">🚫 Shipment Cancelled / Refund Processed</span>
+        </div>
+      ` : `
+        <div style="display:flex; gap: var(--sp-2); margin-top: var(--sp-2); flex-wrap: wrap;">
+          <button class="btn btn-secondary btn-sm" onclick="openTracking('${escapeHtml(tracking)}')">
+            🚚 Track Shipment
+          </button>
+          ${!isDelivered ? `
+            <button class="btn btn-secondary btn-sm" style="color: var(--clr-danger, #c0392b); border-color: rgba(192, 57, 43, 0.35);" onclick="cancelOrder('${escapeHtml(tracking)}')">
+              🚫 Cancel Shipment
+            </button>
+          ` : ''}
+        </div>
+      `}
     </div>
   ` : `
     <div class="order-tracking-info order-tracking-pending">
@@ -1239,6 +1321,42 @@ async function downloadShippingLabel(tracking) {
       btn.disabled = false;
       btn.innerHTML = '📄 Download Shipping Label';
     }
+  }
+}
+
+// ── Cancel Shipment / Order ──
+async function cancelOrder(tracking) {
+  if (!tracking) return;
+  const confirmed = window.confirm(
+    `Are you sure you want to cancel the shipment with tracking #${tracking}? This will cancel the order with ShipGlobal and trigger a refund.`
+  );
+  if (!confirmed) return;
+
+  showToast('Cancelling shipment with ShipGlobal…', 'info');
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/cancel-shipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ tracking }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not cancel shipment');
+    }
+
+    showToast(result.message || 'Shipment cancelled successfully!', 'success');
+    await renderOrders();
+  } catch (err) {
+    console.error('cancelOrder error:', err);
+    showToast(err.message || 'Could not cancel shipment.', 'error');
   }
 }
 

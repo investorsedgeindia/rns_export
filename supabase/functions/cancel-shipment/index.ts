@@ -1,14 +1,14 @@
 /**
- * Supabase Edge Function: get-shipping-label
- * -------------------------------------------
- * Fetches the shipping label PDF from ShipGlobal via order/getLabel.
+ * Supabase Edge Function: cancel-shipment
+ * -----------------------------------------
+ * Cancels a ShipGlobal order and marks it cancelled in Supabase.
  *
- * POST /functions/v1/get-shipping-label
+ * POST /functions/v1/cancel-shipment
  * Body:
- *   { "tracking": string, "label": true }
+ *   { "tracking": string }
  *
  * Response:
- *   { success: true, tracking, label: "<base64 PDF>" }
+ *   { success: true, message: string }
  *
  * Required secrets:
  *   SHIPGLOBAL_USERNAME
@@ -25,15 +25,12 @@ import {
 } from "../_shared/shipglobal.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-interface GetLabelRequest {
+interface CancelRequest {
   tracking: string;
-  label: boolean;
 }
 
-interface GetLabelResponse {
+interface CancelResponse {
   success: boolean;
-  tracking?: string;
-  label?: string;
   msg?: string;
   message?: string;
 }
@@ -69,16 +66,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Validate request body ──
-    const body = (await parseJsonBody(req)) as unknown as GetLabelRequest;
+    const body = (await parseJsonBody(req)) as unknown as CancelRequest;
     const tracking = String(body.tracking || "").trim();
     if (!tracking) {
       return errorResponse("tracking is required");
     }
 
-    // ── Verify the tracking number belongs to this user's order ──
+    // ── Verify order belongs to this customer ──
     const { data: order, error: orderError } = await supabaseClient
       .from("orders")
-      .select("id, shipglobal_tracking")
+      .select("id, customer_id, status, shipglobal_tracking")
       .eq("customer_id", user.id)
       .eq("shipglobal_tracking", tracking)
       .maybeSingle();
@@ -87,47 +84,54 @@ Deno.serve(async (req: Request) => {
       return errorResponse("Could not verify order", 500, orderError);
     }
     if (!order) {
-      return errorResponse("Tracking number not found for this customer", 404);
+      return errorResponse("Order with this tracking number not found", 404);
     }
 
-    // ── Call ShipGlobal order/getLabel ──
-    const { data, error } = await callShipGlobal<GetLabelResponse>("/order/getLabel", {
-      tracking,
-      label: true,
-    });
+    if (order.status === "delivered") {
+      return errorResponse("Cannot cancel an order that has already been delivered", 400);
+    }
+
+    // ── Call ShipGlobal order/cancelRefundOrder ──
+    const { data, error } = await callShipGlobal<CancelResponse>(
+      "/order/cancelRefundOrder",
+      { tracking }
+    );
 
     if (error) {
-      console.error("[get-shipping-label] ShipGlobal error:", error);
+      console.error("[cancel-shipment] ShipGlobal error:", error);
       return errorResponse(
-        error.message || "Could not fetch shipping label from ShipGlobal",
+        error.message || "Could not cancel shipment with ShipGlobal",
         502,
         { code: error.code }
       );
     }
 
-    if (!data || !data.success || !data.label) {
-      return errorResponse("ShipGlobal did not return a shipping label", 502);
-    }
+    const message = data?.msg || data?.message || "Order cancelled successfully";
 
-    // ── Store the label reference on the order using admin client ──
+    // ── Update order status in Supabase using adminClient ──
     const adminClient = getAdminClient();
     const { error: updateError } = await adminClient
       .from("orders")
-      .update({ shipglobal_label: data.label })
+      .update({
+        status: "cancelled",
+        progress: 0,
+        shipglobal_status: "Cancelled",
+        shipglobal_cancelled: true,
+        shipglobal_cancelled_at: new Date().toISOString(),
+        shipglobal_last_synced_at: new Date().toISOString(),
+      })
       .eq("id", order.id);
 
     if (updateError) {
-      console.warn("[get-shipping-label] Failed to store label:", updateError);
+      console.warn("[cancel-shipment] Failed to update order status:", updateError);
     }
 
     return jsonResponse({
       success: true,
-      tracking: data.tracking || tracking,
-      label: data.label,
-      message: data.msg || data.message || "Label fetched successfully",
+      message,
     });
   } catch (error) {
-    console.error("[get-shipping-label] Error:", error);
+    console.error("[cancel-shipment] Error:", error);
     return errorResponse(
       error instanceof Error ? error.message : "Unknown error",
       500

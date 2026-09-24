@@ -79,8 +79,10 @@ create index if not exists orders_customer_idx
 create index if not exists orders_shipglobal_tracking_idx
   on public.orders (shipglobal_tracking) where shipglobal_tracking is not null;
 
-create index if not exists orders_shipglobal_tracking_idx
-  on public.orders (shipglobal_tracking) where shipglobal_tracking is not null;
+-- Idempotent migration: add cancellation columns
+alter table public.orders
+  add column if not exists shipglobal_cancelled boolean not null default false,
+  add column if not exists shipglobal_cancelled_at timestamptz;
 
 -- ── Shipping Quotes (ShipGlobal Rate Calculator) ──
 create table if not exists public.shipping_quotes (
@@ -275,7 +277,7 @@ begin
 
   -- OVERWRITE whatever the client claimed. DB is the only authority.
   new.subtotal := computed_total;
-  new.total    := computed_total;
+  new.total    := computed_total + coalesce(new.shipping_cost, 0);
 
   return new;
 end;
@@ -324,8 +326,8 @@ begin
     computed := computed + (prod_price * qty);
   end loop;
 
-  if abs(server_total - computed) > 0.01 then
-    raise exception 'Internal price mismatch: stored % vs recomputed %', server_total, computed;
+  if abs(server_total - (computed + coalesce(new.shipping_cost, 0))) > 0.01 then
+    raise exception 'Internal price mismatch: stored % vs recomputed items % + shipping %', server_total, computed, coalesce(new.shipping_cost, 0);
   end if;
 
   return new;

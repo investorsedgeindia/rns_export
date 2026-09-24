@@ -23,6 +23,7 @@ import {
   callShipGlobal,
   corsHeaders,
   errorResponse,
+  getAdminClient,
   jsonResponse,
   parseJsonBody,
 } from "../_shared/shipglobal.ts";
@@ -161,6 +162,7 @@ Deno.serve(async (req: Request) => {
     const orderReference = `RNS-${orderId.slice(0, 8).toUpperCase()}`;
     const service = sanitize(body.service, "Shipglobal Direct", 100);
     const currency = sanitize(body.currency, "USD", 3).toUpperCase();
+    const csb5Status = Number(Deno.env.get("SHIPGLOBAL_CSB5_STATUS") ?? 1);
 
     // ── Build the ShipGlobal order/add payload ──
     const shipGlobalPayload = {
@@ -173,7 +175,7 @@ Deno.serve(async (req: Request) => {
       package_breadth: String(packageInfo.breadth || 10),
       package_height: String(packageInfo.height || 10),
       currency_code: currency,
-      csb5_status: 0,
+      csb5_status: csb5Status,
       customer_shipping_firstname: sanitize(customer.firstname, "", 100),
       customer_shipping_lastname: sanitize(customer.lastname, "", 100),
       customer_shipping_mobile: sanitize(customer.mobile, "", 30),
@@ -215,8 +217,9 @@ Deno.serve(async (req: Request) => {
       return errorResponse("ShipGlobal did not return a tracking number", 502);
     }
 
-    // ── Update the Supabase order with ShipGlobal references ──
-    const { error: updateError } = await supabaseClient
+    // ── Update the Supabase order with ShipGlobal references using adminClient to ensure RLS compliance ──
+    const adminClient = getAdminClient();
+    const { error: updateError } = await adminClient
       .from("orders")
       .update({
         shipglobal_invoice_no: invoiceNo,

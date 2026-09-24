@@ -21,6 +21,7 @@ import {
   callShipGlobal,
   corsHeaders,
   errorResponse,
+  getAdminClient,
   jsonResponse,
   parseJsonBody,
 } from "../_shared/shipglobal.ts";
@@ -65,6 +66,7 @@ interface TrackingResponse {
 
 const STATUS_PROGRESS: Record<string, number> = {
   SGE_001: 10,
+  SGE_002: 12,
   SGE_101: 15,
   SGE_102: 20,
   SGE_103: 20,
@@ -192,8 +194,9 @@ Deno.serve(async (req: Request) => {
       ? STATUS_PROGRESS[statusCode]
       : status === "delivered" ? 100 : status === "cancelled" ? 0 : 33;
 
-    // ── Sync tracking data back into Supabase ──
-    const { error: updateError } = await supabaseClient
+    // ── Sync tracking data back into Supabase using admin client ──
+    const adminClient = getAdminClient();
+    const { error: updateError } = await adminClient
       .from("orders")
       .update({
         shipglobal_status: rawStatus || "Unknown",
