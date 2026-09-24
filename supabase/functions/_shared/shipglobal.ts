@@ -30,16 +30,38 @@ export interface ShipGlobalErrorResponse {
   code?: string | number;
 }
 
-export function shipGlobalAuthHeaders(): Record<string, string> {
-  const username = Deno.env.get("SHIPGLOBAL_USERNAME");
-  const password = Deno.env.get("SHIPGLOBAL_PASSWORD");
+export async function getShipGlobalCredentials(): Promise<{ username: string; password: string }> {
+  let username = Deno.env.get("SHIPGLOBAL_USERNAME");
+  let password = Deno.env.get("SHIPGLOBAL_PASSWORD");
 
   if (!username || !password) {
-    throw new Error(
-      "ShipGlobal credentials are not configured. Set SHIPGLOBAL_USERNAME and SHIPGLOBAL_PASSWORD secrets."
-    );
+    try {
+      const adminClient = getAdminClient();
+      const { data } = await adminClient
+        .from("app_settings")
+        .select("key, value")
+        .in("key", ["SHIPGLOBAL_USERNAME", "SHIPGLOBAL_PASSWORD"]);
+
+      if (data && Array.isArray(data)) {
+        for (const row of data) {
+          if (row.key === "SHIPGLOBAL_USERNAME") username = row.value;
+          if (row.key === "SHIPGLOBAL_PASSWORD") password = row.value;
+        }
+      }
+    } catch (_err) {
+      // Ignore database lookup errors if table not created yet
+    }
   }
 
+  // Configured default credentials
+  username = username || "bandhupremagency@gmail.com";
+  password = password || "#Include111";
+
+  return { username, password };
+}
+
+export async function shipGlobalAuthHeaders(): Promise<Record<string, string>> {
+  const { username, password } = await getShipGlobalCredentials();
   const token = btoa(`${username}:${password}`);
   return {
     Authorization: `Basic ${token}`,
@@ -55,9 +77,10 @@ export async function callShipGlobal<T>(
   const url = `${SHIPGLOBAL_BASE_URL}${SHIPGLOBAL_API_PATH}${path}`;
 
   try {
+    const headers = await shipGlobalAuthHeaders();
     const response = await fetch(url, {
       method: "POST",
-      headers: shipGlobalAuthHeaders(),
+      headers,
       body: JSON.stringify(payload),
     });
 

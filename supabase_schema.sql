@@ -110,6 +110,30 @@ create table if not exists public.newsletter_subscribers (
   created_at  timestamptz not null default now()
 );
 
+-- 4. APPLICATION SETTINGS & SECRETS TABLE (Service-role only)
+-- Stores server-side configuration like third-party API credentials.
+-- Protected by RLS with no anon/authenticated policies so only service-role can read/write.
+create table if not exists public.app_settings (
+  key         text primary key,
+  value       text not null,
+  description text,
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.app_settings enable row level security;
+
+-- Seed ShipGlobal API credentials
+insert into public.app_settings (key, value, description)
+values
+  ('SHIPGLOBAL_USERNAME', 'bandhupremagency@gmail.com', 'ShipGlobal vendor email / username'),
+  ('SHIPGLOBAL_PASSWORD', '#Include111', 'ShipGlobal vendor API password / key'),
+  ('SHIPGLOBAL_BASE_URL', 'https://app.shipglobal.in', 'ShipGlobal API base URL'),
+  ('SHIPGLOBAL_CSB5_STATUS', '1', '1 for commercial Indian export, 0 for normal')
+on conflict (key) do update set
+  value = excluded.value,
+  description = excluded.description,
+  updated_at = now();
+
 -- =============================================================
 -- ROW LEVEL SECURITY (RLS)
 -- This is the security backbone. Without these policies the anon
