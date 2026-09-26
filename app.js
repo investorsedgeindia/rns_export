@@ -99,6 +99,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const isOrdersPage = document.getElementById('orders-page') || document.getElementById('orders-list');
   const isCartPage = document.getElementById('cart-page') || document.getElementById('cart-content');
 
+  console.log('[Init] Page type - orders:', !!isOrdersPage, 'cart:', !!isCartPage);
+
   if (isOrdersPage) {
     setTimeout(() => renderOrders(), 0);
   }
@@ -328,8 +330,10 @@ const CART_STORAGE_KEY = 'rns_cart_v1';
 function loadCartFromStorage() {
   try {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
+    console.log('[Cart] Loading from localStorage:', stored);
     if (stored) {
       cart = JSON.parse(stored);
+      console.log('[Cart] Loaded cart:', cart);
     }
   } catch (err) {
     console.error('loadCartFromStorage error:', err);
@@ -431,20 +435,26 @@ function closeCart() {
 
 // ── Cart Page Rendering ──
 function renderCartPage() {
+  console.log('[Cart] renderCartPage called, cart:', cart);
   const itemsList = document.getElementById('cart-items-list');
   const emptyState = document.getElementById('cart-empty-state');
   const cartContent = document.getElementById('cart-content');
   const checkoutBtn = document.getElementById('checkout-btn');
 
-  if (!itemsList) return;
+  if (!itemsList) {
+    console.log('[Cart] No cart-items-list element found');
+    return;
+  }
 
   if (cart.length === 0) {
+    console.log('[Cart] Cart is empty, showing empty state');
     if (emptyState) emptyState.style.display = 'block';
     if (cartContent) cartContent.style.display = 'none';
     if (checkoutBtn) checkoutBtn.disabled = true;
     return;
   }
 
+  console.log('[Cart] Rendering', cart.length, 'items');
   if (emptyState) emptyState.style.display = 'none';
   if (cartContent) cartContent.style.display = 'block';
   if (checkoutBtn) checkoutBtn.disabled = false;
