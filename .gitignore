@@ -49,3 +49,6 @@ desktop.ini
 # ── Supabase CLI local artifacts ──
 supabase/.temp/
 supabase/supabase/
+
+# ── Kilo AI workspace ──
+.kilo/
