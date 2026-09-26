@@ -1462,11 +1462,11 @@ input, select, textarea {
 }
 
 /* ============================================
-   CART PAGE (cart.html)
+   CART PAGE (cart.html) — Single Column Layout
    ============================================ */
 .cart-page {
-  padding-top: calc(var(--nav-height) + var(--sp-8));
-  padding-bottom: var(--sp-12);
+  padding-top: calc(var(--nav-height) + var(--sp-6));
+  padding-bottom: var(--sp-10);
 }
 
 .page-header {
@@ -1474,7 +1474,7 @@ input, select, textarea {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-4);
-  margin-bottom: var(--sp-8);
+  margin-bottom: var(--sp-6);
   flex-wrap: wrap;
 }
 
@@ -1514,28 +1514,40 @@ input, select, textarea {
   color: var(--clr-text-secondary);
 }
 
-.cart-grid {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: var(--sp-8);
-  align-items: start;
-}
-
-.cart-items-section {
+/* Section containers */
+.cart-section {
   background: var(--clr-bg-card);
   border-radius: var(--radius-lg);
-  padding: var(--sp-6);
+  padding: var(--sp-5);
   border: 1px solid var(--clr-border);
+  margin-bottom: var(--sp-4);
 }
 
+.section-heading {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--clr-text-primary);
+  margin-bottom: var(--sp-1);
+}
+
+.section-subtext {
+  font-size: var(--fs-sm);
+  color: var(--clr-text-secondary);
+  margin-bottom: var(--sp-4);
+}
+
+/* Cart items list */
 .cart-items-list {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
 }
 
 .cart-page-item {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--sp-4);
   padding: var(--sp-4);
   background: var(--clr-bg-secondary);
@@ -1550,12 +1562,11 @@ input, select, textarea {
 }
 
 .cart-page-item-info {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
   min-width: 0;
+  flex: 1;
 }
 
 .cart-page-item-title {
@@ -1572,8 +1583,8 @@ input, select, textarea {
 .cart-page-item-controls {
   display: flex;
   align-items: center;
-  gap: var(--sp-4);
-  margin-top: var(--sp-2);
+  gap: var(--sp-3);
+  flex-shrink: 0;
   flex-wrap: wrap;
 }
 
@@ -1599,48 +1610,9 @@ input, select, textarea {
   color: var(--clr-error);
 }
 
-.cart-summary-section {
-  position: sticky;
-  top: calc(var(--nav-height) + var(--sp-6));
-}
-
-.cart-summary-card {
-  background: var(--clr-bg-card);
-  border-radius: var(--radius-lg);
-  padding: var(--sp-6);
-  border: 1px solid var(--clr-border);
-}
-
-.summary-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-3);
-}
-
-.summary-row {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--fs-base);
-  color: var(--clr-text-secondary);
-}
-
-.summary-row.total {
-  font-size: var(--fs-xl);
-  font-weight: 700;
-  color: var(--clr-text-primary);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--clr-border);
-  margin-top: var(--sp-3);
-}
-
-.shipping-quote-section {
-  margin-top: var(--sp-6);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--clr-border);
-}
-
+/* Shipping quote form */
 .shipping-quote-form {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-2);
 }
 
 .shipping-quote-form .form-row {
@@ -1655,14 +1627,16 @@ input, select, textarea {
   gap: var(--sp-1);
 }
 
-.shipping-quote-form label {
+.shipping-quote-form label,
+.shipping-address-form label {
   font-size: var(--fs-sm);
   font-weight: 500;
   color: var(--clr-text-secondary);
 }
 
 .shipping-quote-form select,
-.shipping-quote-form input {
+.shipping-quote-form input,
+.shipping-address-form input {
   padding: var(--sp-3) var(--sp-4);
   border: 1px solid var(--clr-border);
   border-radius: var(--radius-md);
@@ -1670,10 +1644,12 @@ input, select, textarea {
   background: var(--clr-bg-card);
   color: var(--clr-text-primary);
   transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
+  width: 100%;
 }
 
 .shipping-quote-form select:focus,
-.shipping-quote-form input:focus {
+.shipping-quote-form input:focus,
+.shipping-address-form input:focus {
   outline: none;
   border-color: var(--clr-gold);
   box-shadow: 0 0 0 3px rgba(184, 146, 46, 0.15);
@@ -1681,7 +1657,7 @@ input, select, textarea {
 
 .shipping-quote-form .btn {
   width: 100%;
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-3);
 }
 
 .shipping-note {
@@ -1691,6 +1667,7 @@ input, select, textarea {
   line-height: 1.5;
 }
 
+/* Shipping options */
 .shipping-options {
   margin-top: var(--sp-4);
   display: flex;
@@ -1763,17 +1740,9 @@ input, select, textarea {
   font-weight: 600;
 }
 
+/* Shipping address form */
 .shipping-address-form {
-  margin-top: var(--sp-6);
-  padding-top: var(--sp-4);
-  border-top: 1px solid var(--clr-border);
-}
-
-.shipping-address-form h5 {
-  font-family: var(--font-display);
-  font-size: var(--fs-md);
-  margin-bottom: var(--sp-4);
-  color: var(--clr-text-primary);
+  margin-top: var(--sp-2);
 }
 
 .shipping-address-form .form-row {
@@ -1788,66 +1757,70 @@ input, select, textarea {
   gap: var(--sp-1);
 }
 
-.shipping-address-form label {
-  font-size: var(--fs-xs);
-  font-weight: 500;
+/* Order summary */
+.cart-summary-section {
+  background: var(--clr-bg-card);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  border: 1px solid var(--clr-border);
+}
+
+.summary-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-base);
   color: var(--clr-text-secondary);
 }
 
-.shipping-address-form input {
-  padding: var(--sp-3) var(--sp-4);
-  border: 1px solid var(--clr-border);
-  border-radius: var(--radius-md);
-  font-size: var(--fs-base);
-  background: var(--clr-bg-card);
+.summary-row.total {
+  font-size: var(--fs-xl);
+  font-weight: 700;
   color: var(--clr-text-primary);
-  transition: border-color var(--dur-fast), box-shadow var(--dur-fast);
-}
-
-.shipping-address-form input:focus {
-  outline: none;
-  border-color: var(--clr-gold);
-  box-shadow: 0 0 0 3px rgba(184, 146, 46, 0.15);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--clr-border);
+  margin-top: var(--sp-3);
 }
 
 #checkout-btn {
   width: 100%;
-  margin-top: var(--sp-6);
+  margin-top: var(--sp-4);
 }
 
 .cart-empty-state {
-  padding: var(--sp-12) var(--sp-6) !important;
+  padding: var(--sp-10) var(--sp-6) !important;
   text-align: center;
 }
 
 /* Cart page responsive */
-@media (max-width: 1024px) {
-  .cart-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .cart-summary-section {
-    position: static;
-  }
-}
-
 @media (max-width: 768px) {
   .cart-page {
     padding-top: calc(var(--nav-height) + var(--sp-4));
+    padding-bottom: var(--sp-6);
   }
   
   .page-header {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--sp-3);
   }
   
-  .cart-items-section,
-  .cart-summary-card {
+  .section-title {
+    font-size: var(--fs-2xl);
+  }
+  
+  .cart-section {
     padding: var(--sp-4);
   }
   
   .cart-page-item {
     flex-direction: column;
+    align-items: flex-start;
     gap: var(--sp-3);
   }
   
@@ -1860,6 +1833,16 @@ input, select, textarea {
   .shipping-address-form .form-row {
     flex-direction: column;
     gap: var(--sp-3);
+  }
+  
+  .shipping-option {
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+  
+  .shipping-option-price {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

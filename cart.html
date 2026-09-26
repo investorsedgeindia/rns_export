@@ -60,7 +60,7 @@
         </div>
 
         <!-- Cart Empty State -->
-        <div id="cart-empty-state" style="display: none; text-align: center; padding: var(--sp-12) 0;">
+        <div id="cart-empty-state" class="cart-empty-state" style="display: none;">
           <div style="font-size: 4rem; margin-bottom: var(--sp-4);">🛒</div>
           <h2 style="margin-bottom: var(--sp-3);">Your cart is empty</h2>
           <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-6);">Add some premium cashews to get started!</p>
@@ -69,158 +69,152 @@
 
         <!-- Cart Content (hidden when empty) -->
         <div id="cart-content" style="display: none;">
-          <div class="cart-grid">
-            <!-- Cart Items -->
-            <div class="cart-items-section">
-              <h2 style="font-family: var(--font-display); font-size: var(--fs-xl); margin-bottom: var(--sp-4);">Items</h2>
-              <div class="cart-items-list" id="cart-items-list"></div>
+          <!-- Cart Items Section -->
+          <div class="cart-section">
+            <h2 class="section-heading">Items</h2>
+            <div class="cart-items-list" id="cart-items-list"></div>
+          </div>
+
+          <!-- International Shipping Quote -->
+          <div class="cart-section" id="shipping-quote-section">
+            <h3 class="section-heading">🌍 International Delivery</h3>
+            <p class="section-subtext">Get live DDP shipping quotes for your destination</p>
+            
+            <div class="shipping-quote-form">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="shipping-country">Destination Country</label>
+                  <select id="shipping-country" required>
+                    <option value="">Select country…</option>
+                    <option value="US">United States</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="CA">Canada</option>
+                    <option value="AU">Australia</option>
+                    <option value="AE">United Arab Emirates</option>
+                    <option value="SA">Saudi Arabia</option>
+                    <option value="SG">Singapore</option>
+                    <option value="NZ">New Zealand</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="IT">Italy</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="ES">Spain</option>
+                    <option value="QA">Qatar</option>
+                    <option value="KW">Kuwait</option>
+                    <option value="OM">Oman</option>
+                    <option value="BH">Bahrain</option>
+                    <option value="JP">Japan</option>
+                    <option value="KR">South Korea</option>
+                    <option value="CH">Switzerland</option>
+                    <option value="SE">Sweden</option>
+                    <option value="NO">Norway</option>
+                    <option value="DK">Denmark</option>
+                    <option value="BE">Belgium</option>
+                    <option value="AT">Austria</option>
+                    <option value="IE">Ireland</option>
+                    <option value="PT">Portugal</option>
+                    <option value="GR">Greece</option>
+                    <option value="PL">Poland</option>
+                    <option value="CZ">Czech Republic</option>
+                    <option value="HU">Hungary</option>
+                    <option value="RO">Romania</option>
+                    <option value="BG">Bulgaria</option>
+                    <option value="HR">Croatia</option>
+                    <option value="SI">Slovenia</option>
+                    <option value="SK">Slovakia</option>
+                    <option value="LT">Lithuania</option>
+                    <option value="LV">Latvia</option>
+                    <option value="EE">Estonia</option>
+                    <option value="FI">Finland</option>
+                    <option value="LU">Luxembourg</option>
+                    <option value="MT">Malta</option>
+                    <option value="CY">Cyprus</option>
+                    <option value="IS">Iceland</option>
+                    <option value="TR">Turkey</option>
+                    <option value="IL">Israel</option>
+                    <option value="ZA">South Africa</option>
+                    <option value="BR">Brazil</option>
+                    <option value="MX">Mexico</option>
+                    <option value="AR">Argentina</option>
+                    <option value="CL">Chile</option>
+                    <option value="CO">Colombia</option>
+                    <option value="PE">Peru</option>
+                    <option value="TH">Thailand</option>
+                    <option value="MY">Malaysia</option>
+                    <option value="ID">Indonesia</option>
+                    <option value="PH">Philippines</option>
+                    <option value="VN">Vietnam</option>
+                    <option value="IN">India</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="shipping-postcode">Postal Code</label>
+                  <input type="text" id="shipping-postcode" placeholder="e.g. 95134" required maxlength="20" />
+                </div>
+              </div>
+              <button class="btn btn-primary" onclick="getShippingQuote()" id="get-quote-btn" style="width: 100%; margin-top: var(--sp-3);">Get Shipping Quote</button>
+              <p class="shipping-note" id="shipping-note" style="display: none; margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--clr-text-secondary);"></p>
             </div>
 
-            <!-- Cart Summary + Shipping Quote -->
-            <div class="cart-summary-section">
-              <div class="cart-summary-card">
-                <h3 style="font-family: var(--font-display); font-size: var(--fs-lg); margin-bottom: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--clr-border);">Order Summary</h3>
-                
-                <div class="summary-rows" id="summary-rows">
-                  <div class="summary-row">
-                    <span>Subtotal</span>
-                    <span id="cart-subtotal">₹0</span>
-                  </div>
-                  <div class="summary-row">
-                    <span>Shipping</span>
-                    <span id="cart-shipping">Calculate below</span>
-                  </div>
-                  <div class="summary-row total">
-                    <span>Total</span>
-                    <span id="cart-total">₹0</span>
-                  </div>
-                </div>
+            <!-- Shipping Options (Provider quotes) -->
+            <div class="shipping-options" id="shipping-options" style="display: none; margin-top: var(--sp-4);"></div>
+          </div>
 
-                <!-- International Shipping Quote -->
-                <div class="shipping-quote-section" style="margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
-                  <h4 style="font-family: var(--font-display); font-size: var(--fs-md); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">🌍 International Delivery</h4>
-                  <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-bottom: var(--sp-4);">Get live DDP shipping quotes for your destination</p>
-                  
-                  <div class="shipping-quote-form">
-                    <div class="form-row">
-                      <div class="form-group" style="flex:1;">
-                        <label for="shipping-country">Destination Country</label>
-                        <select id="shipping-country" required>
-                          <option value="">Select country…</option>
-                          <option value="US">United States</option>
-                          <option value="GB">United Kingdom</option>
-                          <option value="CA">Canada</option>
-                          <option value="AU">Australia</option>
-                          <option value="AE">United Arab Emirates</option>
-                          <option value="SA">Saudi Arabia</option>
-                          <option value="SG">Singapore</option>
-                          <option value="NZ">New Zealand</option>
-                          <option value="DE">Germany</option>
-                          <option value="FR">France</option>
-                          <option value="IT">Italy</option>
-                          <option value="NL">Netherlands</option>
-                          <option value="ES">Spain</option>
-                          <option value="QA">Qatar</option>
-                          <option value="KW">Kuwait</option>
-                          <option value="OM">Oman</option>
-                          <option value="BH">Bahrain</option>
-                          <option value="JP">Japan</option>
-                          <option value="KR">South Korea</option>
-                          <option value="CH">Switzerland</option>
-                          <option value="SE">Sweden</option>
-                          <option value="NO">Norway</option>
-                          <option value="DK">Denmark</option>
-                          <option value="BE">Belgium</option>
-                          <option value="AT">Austria</option>
-                          <option value="IE">Ireland</option>
-                          <option value="PT">Portugal</option>
-                          <option value="GR">Greece</option>
-                          <option value="PL">Poland</option>
-                          <option value="CZ">Czech Republic</option>
-                          <option value="HU">Hungary</option>
-                          <option value="RO">Romania</option>
-                          <option value="BG">Bulgaria</option>
-                          <option value="HR">Croatia</option>
-                          <option value="SI">Slovenia</option>
-                          <option value="SK">Slovakia</option>
-                          <option value="LT">Lithuania</option>
-                          <option value="LV">Latvia</option>
-                          <option value="EE">Estonia</option>
-                          <option value="FI">Finland</option>
-                          <option value="LU">Luxembourg</option>
-                          <option value="MT">Malta</option>
-                          <option value="CY">Cyprus</option>
-                          <option value="IS">Iceland</option>
-                          <option value="TR">Turkey</option>
-                          <option value="IL">Israel</option>
-                          <option value="ZA">South Africa</option>
-                          <option value="BR">Brazil</option>
-                          <option value="MX">Mexico</option>
-                          <option value="AR">Argentina</option>
-                          <option value="CL">Chile</option>
-                          <option value="CO">Colombia</option>
-                          <option value="PE">Peru</option>
-                          <option value="TH">Thailand</option>
-                          <option value="MY">Malaysia</option>
-                          <option value="ID">Indonesia</option>
-                          <option value="PH">Philippines</option>
-                          <option value="VN">Vietnam</option>
-                          <option value="IN">India</option>
-                        </select>
-                      </div>
-                      <div class="form-group" style="flex:1;">
-                        <label for="shipping-postcode">Postal Code</label>
-                        <input type="text" id="shipping-postcode" placeholder="e.g. 95134" required maxlength="20" />
-                      </div>
-                    </div>
-                    <button class="btn btn-primary" onclick="getShippingQuote()" id="get-quote-btn" style="width: 100%; margin-top: var(--sp-3);">Get Shipping Quote</button>
-                    <p class="shipping-note" id="shipping-note" style="display: none; margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--clr-text-secondary);"></p>
-                  </div>
-
-                  <div class="shipping-options" id="shipping-options" style="display: none; margin-top: var(--sp-4);"></div>
-                </div>
-
-                <!-- Delivery Address Form (shown after quote) -->
-                <div class="shipping-address-form" id="shipping-address-form" style="display: none; margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
-                  <h5 style="font-family: var(--font-display); font-size: var(--fs-sm); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">📍 Delivery Address</h5>
-                  <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
-                    <div class="form-group" style="flex:1;">
-                      <label for="shipping-first-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">First Name *</label>
-                      <input type="text" id="shipping-first-name" placeholder="First Name" maxlength="100" required style="width:100%;" />
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                      <label for="shipping-last-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Last Name *</label>
-                      <input type="text" id="shipping-last-name" placeholder="Last Name" maxlength="100" required style="width:100%;" />
-                    </div>
-                  </div>
-                  <div class="form-group" style="margin-bottom: var(--sp-2);">
-                    <label for="shipping-address" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Street Address *</label>
-                    <input type="text" id="shipping-address" placeholder="House/Flat number, Street name" maxlength="200" required style="width:100%;" />
-                  </div>
-                  <div class="form-group" style="margin-bottom: var(--sp-2);">
-                    <label for="shipping-address2" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Apartment, Suite, Unit (optional)</label>
-                    <input type="text" id="shipping-address2" placeholder="Apartment, unit, landmark, etc." maxlength="200" style="width:100%;" />
-                  </div>
-                  <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
-                    <div class="form-group" style="flex:1;">
-                      <label for="shipping-city" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">City *</label>
-                      <input type="text" id="shipping-city" placeholder="e.g. San Jose" maxlength="100" required style="width:100%;" />
-                    </div>
-                    <div class="form-group" style="flex:1;">
-                      <label for="shipping-state" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">State / Province *</label>
-                      <input type="text" id="shipping-state" placeholder="e.g. CA" maxlength="100" required style="width:100%;" />
-                    </div>
-                  </div>
-                  <div class="form-group" style="margin-bottom: var(--sp-2);">
-                    <label for="shipping-phone" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Recipient Phone Number *</label>
-                    <input type="tel" id="shipping-phone" placeholder="e.g. +1 555 123 4567" maxlength="30" required style="width:100%;" />
-                  </div>
-                </div>
-
-                <!-- Checkout Button -->
-                <button class="btn btn-primary btn-lg" onclick="handleCheckout()" id="checkout-btn" style="width: 100%; margin-top: var(--sp-6);" disabled>Proceed to Checkout</button>
+          <!-- Delivery Address Form (shown after quote) -->
+          <div class="cart-section" id="shipping-address-form" style="display: none;">
+            <h3 class="section-heading">📍 Delivery Address</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="shipping-first-name">First Name *</label>
+                <input type="text" id="shipping-first-name" placeholder="First Name" maxlength="100" required />
+              </div>
+              <div class="form-group">
+                <label for="shipping-last-name">Last Name *</label>
+                <input type="text" id="shipping-last-name" placeholder="Last Name" maxlength="100" required />
               </div>
             </div>
+            <div class="form-group">
+              <label for="shipping-address">Street Address *</label>
+              <input type="text" id="shipping-address" placeholder="House/Flat number, Street name" maxlength="200" required />
+            </div>
+            <div class="form-group">
+              <label for="shipping-address2">Apartment, Suite, Unit (optional)</label>
+              <input type="text" id="shipping-address2" placeholder="Apartment, unit, landmark, etc." maxlength="200" />
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="shipping-city">City *</label>
+                <input type="text" id="shipping-city" placeholder="e.g. San Jose" maxlength="100" required />
+              </div>
+              <div class="form-group">
+                <label for="shipping-state">State / Province *</label>
+                <input type="text" id="shipping-state" placeholder="e.g. CA" maxlength="100" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="shipping-phone">Recipient Phone Number *</label>
+              <input type="tel" id="shipping-phone" placeholder="e.g. +1 555 123 4567" maxlength="30" required />
+            </div>
+          </div>
+
+          <!-- Order Summary (at bottom) -->
+          <div class="cart-section cart-summary-section">
+            <h3 class="section-heading">Order Summary</h3>
+            <div class="summary-rows" id="summary-rows">
+              <div class="summary-row">
+                <span>Subtotal</span>
+                <span id="cart-subtotal">₹0</span>
+              </div>
+              <div class="summary-row">
+                <span>Shipping</span>
+                <span id="cart-shipping">Select shipping option</span>
+              </div>
+              <div class="summary-row total">
+                <span>Total</span>
+                <span id="cart-total">₹0</span>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="handleCheckout()" id="checkout-btn" style="width: 100%; margin-top: var(--sp-4);" disabled>Proceed to Checkout</button>
           </div>
         </div>
       </div>
