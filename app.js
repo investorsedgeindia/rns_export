@@ -359,23 +359,32 @@ function clearCartStorage() {
 
 function updateCartUI() {
   const totalItems = cart.reduce((sum, item) => sum + item.qty, 0);
+  
+  // Cart sidebar elements (index.html only)
   const badge = document.getElementById('cart-badge');
-  badge.textContent = totalItems;
-  badge.classList.toggle('visible', totalItems > 0);
+  if (badge) {
+    badge.textContent = totalItems;
+    badge.classList.toggle('visible', totalItems > 0);
+  }
 
-  document.getElementById('cart-count-label').textContent = `(${totalItems})`;
+  const countLabel = document.getElementById('cart-count-label');
+  if (countLabel) countLabel.textContent = `(${totalItems})`;
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
-  document.getElementById('cart-subtotal').textContent = `₹${subtotal.toLocaleString('en-IN')}`;
-  document.getElementById('cart-total').textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+  
+  const subtotalEl = document.getElementById('cart-subtotal');
+  if (subtotalEl) subtotalEl.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
 
-  // Shipping quote display
+  const totalEl = document.getElementById('cart-total');
+  if (totalEl) totalEl.textContent = `₹${subtotal.toLocaleString('en-IN')}`;
+
+  // Shipping quote display (sidebar)
   const shippingEl = document.getElementById('cart-shipping');
   if (shippingEl) {
     if (selectedShippingService && shippingQuote) {
       const shippingCost = Number(selectedShippingService.subtotal_fee || selectedShippingService.price?.logistic_fee || 0);
       shippingEl.textContent = `${shippingQuote.currency || 'INR'} ${shippingCost.toLocaleString('en-IN')}`;
-      document.getElementById('cart-total').textContent = `${shippingQuote.currency || 'INR'} ${(subtotal + shippingCost).toLocaleString('en-IN')}`;
+      if (totalEl) totalEl.textContent = `${shippingQuote.currency || 'INR'} ${(subtotal + shippingCost).toLocaleString('en-IN')}`;
     } else if (shippingQuote) {
       shippingEl.textContent = 'Select a service';
     } else {
@@ -383,15 +392,21 @@ function updateCartUI() {
     }
   }
 
-  const isEmpty = cart.length === 0;
-  document.getElementById('cart-empty').style.display = isEmpty ? 'flex' : 'none';
-  document.getElementById('cart-footer').style.display = isEmpty ? 'none' : 'block';
-  document.getElementById('shipping-quote').style.display = isEmpty ? 'none' : 'block';
+  // Sidebar empty/footer/quote sections
+  const cartEmpty = document.getElementById('cart-empty');
+  if (cartEmpty) cartEmpty.style.display = cart.length === 0 ? 'flex' : 'none';
+
+  const cartFooter = document.getElementById('cart-footer');
+  if (cartFooter) cartFooter.style.display = cart.length === 0 ? 'none' : 'block';
+
+  const shippingQuote = document.getElementById('shipping-quote');
+  if (shippingQuote) shippingQuote.style.display = cart.length === 0 ? 'none' : 'block';
 }
 
 function renderCartItems() {
   const container = document.getElementById('cart-items');
   const emptyEl = document.getElementById('cart-empty');
+  if (!container) return;
 
   container.querySelectorAll('.cart-item').forEach(el => el.remove());
 
