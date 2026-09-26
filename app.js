@@ -86,6 +86,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSmoothScroll();
   initAuthListener();
 
+  // Load cart from localStorage and update UI
+  loadCartFromStorage();
+  updateCartUI();
+  renderCartItems();
+
   // Restore session on page load, then always sync the auth UI so the
   // account button is wired up even when there is no active session.
   await restoreSession();
@@ -204,7 +209,9 @@ async function addShowcaseToCart() {
   showcaseQty = 1;
   const el = document.getElementById('showcase-qty');
   if (el) el.textContent = '1';
+  saveCartToStorage();
   updateCartUI();
+  renderCartItems();
   showToast(`${product.name} × ${addQty} added to cart!`, 'success');
   // Mini animation feedback
   const btn = document.querySelector('.showcase-add-btn');
@@ -269,7 +276,9 @@ async function addToCart(productId) {
   const showcaseQtyEl = document.getElementById('showcase-qty');
   if (showcaseQtyEl) showcaseQtyEl.textContent = String(existing ? existing.qty : 1);
 
+  saveCartToStorage();
   updateCartUI();
+  renderCartItems();
   showToast(`${product.name} added to cart!`, 'success');
 
   const btn = document.getElementById(`atc-btn-${id}`);
@@ -286,6 +295,7 @@ async function addToCart(productId) {
 function removeFromCart(productId) {
   const id = Number(productId);
   cart = cart.filter(item => item.id !== id);
+  saveCartToStorage();
   updateCartUI();
   renderCartItems();
 }
@@ -302,8 +312,40 @@ function updateQty(productId, delta) {
   }
   if (item.qty > 99) item.qty = 99;
 
+  saveCartToStorage();
   updateCartUI();
   renderCartItems();
+}
+
+// ── Cart Persistence (localStorage - frontend only) ──
+const CART_STORAGE_KEY = 'rns_cart_v1';
+
+function loadCartFromStorage() {
+  try {
+    const stored = localStorage.getItem(CART_STORAGE_KEY);
+    if (stored) {
+      cart = JSON.parse(stored);
+    }
+  } catch (err) {
+    console.error('loadCartFromStorage error:', err);
+    cart = [];
+  }
+}
+
+function saveCartToStorage() {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch (err) {
+    console.error('saveCartToStorage error:', err);
+  }
+}
+
+function clearCartStorage() {
+  try {
+    localStorage.removeItem(CART_STORAGE_KEY);
+  } catch (err) {
+    console.error('clearCartStorage error:', err);
+  }
 }
 
 function updateCartUI() {
@@ -775,6 +817,12 @@ function scrollToOrders() {
 
 async function handleSignOut() {
   try {
+    // Clear cart on logout
+    cart = [];
+    clearCartStorage();
+    updateCartUI();
+    renderCartItems();
+    
     await supabaseClient.auth.signOut();
     showToast('Signed out successfully', 'info');
   } catch (err) {
