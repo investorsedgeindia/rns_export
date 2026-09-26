@@ -23,8 +23,8 @@
       </a>
 
       <ul class="nav-links" id="nav-links">
-        <li><a href="#home" class="nav-link active" data-nav="home">Home</a></li>
-        <li><a href="#orders" class="nav-link" data-nav="orders" id="nav-orders">My Orders</a></li>
+        <li><a href="index.html" class="nav-link active" data-nav="home">Home</a></li>
+        <li><a href="orders.html" class="nav-link" data-nav="orders" id="nav-orders">My Orders</a></li>
       </ul>
 
       <div class="nav-actions">
@@ -44,7 +44,7 @@
               </div>
             </div>
             <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
-            <a href="#orders" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); scrollToOrders();">
+            <a href="orders.html" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown();">
               📦 My Orders
             </a>
             <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">
@@ -121,26 +121,6 @@
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════ ORDER TRACKING SECTION ═══════ -->
-  <section class="section orders-section" id="orders">
-    <div class="container">
-      <div class="section-header">
-        <div class="section-label">Your Account</div>
-        <h2 class="section-title">Order Tracking</h2>
-        <p class="section-subtitle">Track the status of your orders and see your purchase history</p>
-      </div>
-
-      <div id="orders-logged-out" style="text-align:center;">
-        <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-6);">Please sign in to view your orders.</p>
-        <button class="btn btn-primary" onclick="openAuth()">Sign In</button>
-      </div>
-
-      <div class="orders-list" id="orders-list" style="display:none;">
-        <!-- Orders rendered by JS -->
       </div>
     </div>
   </section>

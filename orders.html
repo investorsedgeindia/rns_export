@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Orders — Bandhuprem Foods</title>
+  <meta name="description" content="Track your orders and view purchase history" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>" />
+</head>
+<body>
+  <!-- ═══════ NAVIGATION ═══════ -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand" id="nav-brand">
+        <div class="nav-brand-icon">🥜</div>
+        <div class="nav-brand-text">Bandhuprem Foods</div>
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="nav-link" data-nav="home">Home</a></li>
+        <li><a href="orders.html" class="nav-link active" data-nav="orders">My Orders</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="nav-action-btn" id="search-btn" aria-label="Search">🔍</button>
+        <div class="account-dropdown" id="account-dropdown">
+          <button class="nav-action-btn account-btn-trigger" id="account-btn" aria-label="Account" aria-expanded="false" aria-haspopup="true">👤</button>
+          <div class="account-dropdown-menu" id="account-dropdown-menu" role="menu" style="display: none;">
+            <div class="account-dropdown-header" id="account-dropdown-header" style="display: none;">
+              <div class="account-avatar" id="account-avatar">👤</div>
+              <div class="account-info">
+                <span class="account-name" id="account-name">Guest</span>
+                <span class="account-email" id="account-email">Sign in to view orders</span>
+              </div>
+            </div>
+            <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
+            <a href="orders.html" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown();">📦 My Orders</a>
+            <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">🚪 Sign Out</button>
+            <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem" onclick="closeAccountDropdown(); openAuth();">🔐 Sign In / Register</a>
+          </div>
+        </div>
+        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="openCart()">🛒<span class="badge" id="cart-badge">0</span></button>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════ ORDER TRACKING PAGE ═══════ -->
+  <main class="main-content">
+    <section class="section orders-page" id="orders-page">
+      <div class="container">
+        <div class="page-header">
+          <a href="index.html" class="back-link" aria-label="Back to home">← Back to Shop</a>
+          <div class="section-header">
+            <div class="section-label">Your Account</div>
+            <h1 class="section-title">Order Tracking</h1>
+            <p class="section-subtitle">Track the status of your orders and see your purchase history</p>
+          </div>
+        </div>
+
+        <div id="orders-logged-out" style="text-align:center; padding: var(--sp-12) 0;">
+          <div style="font-size: 4rem; margin-bottom: var(--sp-4);">📦</div>
+          <h2 style="margin-bottom: var(--sp-3);">Please sign in to view your orders</h2>
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-6);">Your order history will appear here once you sign in.</p>
+          <button class="btn btn-primary btn-lg" onclick="openAuth()">Sign In</button>
+        </div>
+
+        <div class="orders-list" id="orders-list" style="display:none;"></div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-brand"><div class="nav-brand-icon">🥜</div><div class="nav-brand-text">Bandhuprem Foods</div></a>
+          <p class="footer-brand-desc">Premium cashews and almonds, handpicked from the finest orchards. Delivering nature's best to your doorstep since 2020.</p>
+          <div class="footer-socials">
+            <a href="#" class="footer-social-link" aria-label="Facebook">f</a>
+            <a href="#" class="footer-social-link" aria-label="Instagram">📷</a>
+            <a href="#" class="footer-social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="footer-social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div><h4 class="footer-col-title">Quick Links</h4><ul class="footer-links"><li><a href="index.html">Home</a></li><li><a href="orders.html">My Orders</a></li></ul></div>
+        <div><h4 class="footer-col-title">Support</h4><ul class="footer-links"><li><a href="#">FAQs</a></li><li><a href="#">Shipping Info</a></li><li><a href="#">Returns</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Privacy Policy</a></li></ul></div>
+        <div><h4 class="footer-col-title">Contact</h4><ul class="footer-links"><li><a href="mailto:hello@rnsdryfruits.com">hello@rnsdryfruits.com</a></li><li><a href="tel:+919876543210">+91 98765 43210</a></li><li><a href="#">Mumbai, India</a></li></ul></div>
+      </div>
+      <div class="footer-bottom"><p>© 2024 Bandhuprem Foods. All rights reserved.</p><div class="footer-payments"><span class="footer-payment-icon">VISA</span><span class="footer-payment-icon">MC</span><span class="footer-payment-icon">UPI</span><span class="footer-payment-icon">COD</span></div></div>
+    </div>
+  </footer>
+
+  <!-- ═══════ TRACKING MODAL ═══════ -->
+  <div class="auth-overlay" id="tracking-overlay">
+    <div class="auth-modal tracking-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeTracking()">✕</button>
+      <div class="auth-modal-header">
+        <a href="#" class="nav-brand"><div class="nav-brand-icon">📦</div><div class="nav-brand-text">Track Your Order</div></a>
+      </div>
+      <div class="auth-form-container" id="tracking-content"><p style="text-align:center; color: var(--clr-text-secondary);">Loading tracking details…</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════ AUTH MODAL ═══════ -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeAuth()">✕</button>
+      <div class="auth-modal-header"><a href="#" class="nav-brand"><div class="nav-brand-icon">🥜</div><div class="nav-brand-text">Bandhuprem Foods</div></a></div>
+      <div class="auth-form-container">
+        <div class="auth-alert" id="auth-alert" style="display: none;" role="alert"></div>
+        <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="Enter your email" required autocomplete="email" maxlength="254" /></div>
+          <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">We'll email you a one-time login code. No password needed.</p>
+          <div class="auth-divider">or continue with</div>
+          <div class="social-login-btns"><button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button><button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button></div>
+        </form>
+        <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-2); text-align:center;">Enter the 6-digit code sent to<br /><strong id="otp-email-display"></strong></p>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-muted); margin-bottom: var(--sp-4); text-align:center;">💡 You can enter the code below, or click the link in the email to log in directly.</p>
+          <div class="form-group"><label for="otp-code">Verification Code</label><input type="text" id="otp-code" placeholder="6-digit code" required maxlength="6" minlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing: 0.5em; text-align:center; font-size: 1.25rem;" /></div>
+          <button type="submit" class="btn btn-primary btn-lg">Verify & Sign In</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">Didn't get it? <a href="#" onclick="resendOtp(event)" style="color: var(--clr-primary);">Resend code</a> · <a href="#" onclick="backToAuth(event)" style="color: var(--clr-primary);">Use different email</a></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ TOAST CONTAINER ═══════ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

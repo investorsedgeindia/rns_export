@@ -90,6 +90,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // account button is wired up even when there is no active session.
   await restoreSession();
   updateAuthUI();
+
+  // If on orders page, render orders after auth is ready
+  if (document.getElementById('orders-page') || document.getElementById('orders-list')) {
+    // Wait a tick for auth state to settle
+    setTimeout(() => renderOrders(), 0);
+  }
 });
 
 // ── Auth: Session restoration & listener ──
@@ -987,7 +993,8 @@ async function handleOAuth(provider) {
 // ── Auth UI sync ──
 function updateAuthUI() {
   const accountBtn = document.getElementById('account-btn');
-  const ordersSection = document.getElementById('orders');
+  // Support both orders.html (orders-page) and legacy index.html (orders-section)
+  const ordersSection = document.getElementById('orders-page') || document.getElementById('orders-section') || document.getElementById('orders');
   const ordersLoggedOut = document.getElementById('orders-logged-out');
   const ordersList = document.getElementById('orders-list');
   const dropdownMenu = document.getElementById('account-dropdown-menu');
@@ -1017,9 +1024,9 @@ function updateAuthUI() {
     if (accountSigninLink) accountSigninLink.style.display = 'none';
     if (dropdownMenu) dropdownMenu.style.display = 'none';
 
-    ordersSection.classList.add('visible');
-    ordersLoggedOut.style.display = 'none';
-    ordersList.style.display = 'flex';
+    if (ordersSection) ordersSection.classList.add('visible');
+    if (ordersLoggedOut) ordersLoggedOut.style.display = 'none';
+    if (ordersList) ordersList.style.display = 'flex';
   } else {
     accountBtn.innerHTML = '👤';
     accountBtn.style.background = '';
@@ -1034,26 +1041,38 @@ function updateAuthUI() {
     if (accountSigninLink) accountSigninLink.style.display = 'flex';
     if (dropdownMenu) dropdownMenu.style.display = 'none';
 
-    ordersSection.classList.remove('visible');
-    ordersLoggedOut.style.display = 'block';
-    ordersList.style.display = 'none';
+    if (ordersSection) ordersSection.classList.remove('visible');
+    if (ordersLoggedOut) ordersLoggedOut.style.display = 'block';
+    if (ordersList) ordersList.style.display = 'none';
   }
 }
 
 // ── Order Tracking: fetch real orders from DB ──
 async function renderOrders() {
+  // Support both orders.html (orders-page) and legacy index.html (orders-section)
   const list = document.getElementById('orders-list');
+  const loggedOutEl = document.getElementById('orders-logged-out');
+  const ordersSection = document.getElementById('orders-section') || document.getElementById('orders-page');
+
+  if (!list) return; // No orders container on this page
+
   if (!isLoggedIn || !currentUser) {
     list.innerHTML = '';
+    if (loggedOutEl) loggedOutEl.style.display = 'block';
+    if (ordersSection) ordersSection.classList.remove('visible');
     return;
   }
+
+  if (loggedOutEl) loggedOutEl.style.display = 'none';
+  if (ordersSection) ordersSection.classList.add('visible');
+  list.style.display = 'flex';
 
   list.innerHTML = '<div style="text-align:center; color: var(--clr-text-secondary); padding: var(--sp-6);">Loading your orders…</div>';
 
   try {
     const { data, error } = await supabaseClient
       .from('orders')
-      .select('id, items, total, status, progress, created_at, shipping_country, shipping_postcode, shipping_service, shipping_cost, shipping_currency, shipglobal_tracking, shipglobal_service, shipglobal_status, shipglobal_status_code, shipglobal_events, shipglobal_last_synced_at, shipglobal_created')
+      .select('id, items, total, status, progress, created_at, shipping_country, shipping_postcode, shipping_service, shipping_cost, shipping_currency, shipglobal_tracking, shipglobal_service, shipglobal_status, shipglobal_status_code, shipglobal_events, shipglobal_last_synced_at, shipglobal_created, shipglobal_cancelled')
       .eq('customer_id', currentUser.id)
       .order('created_at', { ascending: false });
 

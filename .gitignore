@@ -45,3 +45,7 @@ desktop.ini
 # ── Misc ──
 *.local
 .history/
+
+# ── Supabase CLI local artifacts ──
+supabase/.temp/
+supabase/supabase/
