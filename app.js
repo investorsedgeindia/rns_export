@@ -86,27 +86,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSmoothScroll();
   initAuthListener();
 
+  // Restore session FIRST so auth state is ready for page rendering
+  await restoreSession();
+  updateAuthUI();
+
   // Load cart from localStorage and update UI
   loadCartFromStorage();
   updateCartUI();
   renderCartItems();
-
-  // Restore session on page load, then always sync the auth UI so the
-  // account button is wired up even when there is no active session.
-  await restoreSession();
-  updateAuthUI();
 
   // Page-specific initialization
   const isOrdersPage = document.getElementById('orders-page') || document.getElementById('orders-list');
   const isCartPage = document.getElementById('cart-page') || document.getElementById('cart-content');
 
   if (isOrdersPage) {
-    // Wait a tick for auth state to settle
     setTimeout(() => renderOrders(), 0);
   }
 
   if (isCartPage) {
-    // Always render cart page (it handles empty state). Auth only gates checkout.
     renderCartPage();
   }
 });
@@ -504,14 +501,31 @@ function updateCartPageSummary() {
 }
 
 // ── Auth-gated Navigation ──
+let authRedirectTarget = null; // 'orders' | 'cart'
+
 async function navigateToOrders() {
   if (await requireAuth()) {
     window.location.href = 'orders.html';
+  } else {
+    authRedirectTarget = 'orders';
   }
 }
 
 async function navigateToCart() {
   if (await requireAuth()) {
+    window.location.href = 'cart.html';
+  } else {
+    authRedirectTarget = 'cart';
+  }
+}
+
+// ── Call this after successful OTP verification ──
+function handlePostAuthRedirect() {
+  if (authRedirectTarget === 'orders') {
+    authRedirectTarget = null;
+    window.location.href = 'orders.html';
+  } else if (authRedirectTarget === 'cart') {
+    authRedirectTarget = null;
     window.location.href = 'cart.html';
   }
 }
@@ -1095,6 +1109,7 @@ async function handleOtpVerify(e) {
 
     closeAuth();
     showToast('Signed in successfully!', 'success');
+    handlePostAuthRedirect();
     // loadCurrentUser is triggered automatically by onAuthStateChange listener
   } catch (err) {
     console.error('OTP verify failed:', err);
