@@ -96,10 +96,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   await restoreSession();
   updateAuthUI();
 
-  // If on orders page, render orders after auth is ready
-  if (document.getElementById('orders-page') || document.getElementById('orders-list')) {
+  // Page-specific initialization
+  const isOrdersPage = document.getElementById('orders-page') || document.getElementById('orders-list');
+  const isCartPage = document.getElementById('cart-page') || document.getElementById('cart-content');
+
+  if (isOrdersPage) {
     // Wait a tick for auth state to settle
     setTimeout(() => renderOrders(), 0);
+  }
+
+  if (isCartPage) {
+    // Always render cart page (it handles empty state). Auth only gates checkout.
+    renderCartPage();
   }
 });
 
@@ -422,6 +430,19 @@ function closeCart() {
   document.getElementById('cart-overlay').classList.remove('open');
   document.getElementById('cart-sidebar').classList.remove('open');
   document.body.style.overflow = '';
+}
+
+// ── Auth-gated Navigation ──
+async function navigateToOrders() {
+  if (await requireAuth()) {
+    window.location.href = 'orders.html';
+  }
+}
+
+async function navigateToCart() {
+  if (await requireAuth()) {
+    window.location.href = 'cart.html';
+  }
 }
 
 // ── Shipping: Get live quote from ShipGlobal ──

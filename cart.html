@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shopping Cart — Bandhuprem Foods</title>
+  <meta name="description" content="Review your cart, get international shipping quotes, and checkout" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛒</text></svg>" />
+</head>
+<body>
+  <!-- ═══════ NAVIGATION ═══════ -->
+  <nav class="navbar" id="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand" id="nav-brand">
+        <div class="nav-brand-icon">🥜</div>
+        <div class="nav-brand-text">Bandhuprem Foods</div>
+      </a>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="nav-link" data-nav="home">Home</a></li>
+        <li><a href="#" class="nav-link" data-nav="orders" onclick="navigateToOrders()">My Orders</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="nav-action-btn" id="search-btn" aria-label="Search">🔍</button>
+        <div class="account-dropdown" id="account-dropdown">
+          <button class="nav-action-btn account-btn-trigger" id="account-btn" aria-label="Account" aria-expanded="false" aria-haspopup="true">👤</button>
+          <div class="account-dropdown-menu" id="account-dropdown-menu" role="menu" style="display: none;">
+            <div class="account-dropdown-header" id="account-dropdown-header" style="display: none;">
+              <div class="account-avatar" id="account-avatar">👤</div>
+              <div class="account-info">
+                <span class="account-name" id="account-name">Guest</span>
+                <span class="account-email" id="account-email">Sign in to view orders</span>
+              </div>
+            </div>
+            <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
+            <a href="#" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); navigateToOrders();">📦 My Orders</a>
+            <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">🚪 Sign Out</button>
+            <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem" onclick="closeAccountDropdown(); openAuth();">🔐 Sign In / Register</a>
+          </div>
+        </div>
+        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="navigateToCart()">🛒<span class="badge" id="cart-badge">0</span></button>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════ CART PAGE ═══════ -->
+  <main class="main-content">
+    <section class="section cart-page" id="cart-page">
+      <div class="container">
+        <div class="page-header">
+          <a href="index.html" class="back-link" aria-label="Back to shop">← Continue Shopping</a>
+          <div class="section-header">
+            <div class="section-label">Your Cart</div>
+            <h1 class="section-title">Shopping Cart</h1>
+            <p class="section-subtitle">Review your items and get international shipping quotes</p>
+          </div>
+        </div>
+
+        <!-- Cart Empty State -->
+        <div id="cart-empty-state" style="display: none; text-align: center; padding: var(--sp-12) 0;">
+          <div style="font-size: 4rem; margin-bottom: var(--sp-4);">🛒</div>
+          <h2 style="margin-bottom: var(--sp-3);">Your cart is empty</h2>
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-6);">Add some premium cashews to get started!</p>
+          <a href="index.html" class="btn btn-primary btn-lg">← Continue Shopping</a>
+        </div>
+
+        <!-- Cart Content (hidden when empty) -->
+        <div id="cart-content" style="display: none;">
+          <div class="cart-grid">
+            <!-- Cart Items -->
+            <div class="cart-items-section">
+              <h2 style="font-family: var(--font-display); font-size: var(--fs-xl); margin-bottom: var(--sp-4);">Items</h2>
+              <div class="cart-items-list" id="cart-items-list"></div>
+            </div>
+
+            <!-- Cart Summary + Shipping Quote -->
+            <div class="cart-summary-section">
+              <div class="cart-summary-card">
+                <h3 style="font-family: var(--font-display); font-size: var(--fs-lg); margin-bottom: var(--sp-4); padding-bottom: var(--sp-3); border-bottom: 1px solid var(--clr-border);">Order Summary</h3>
+                
+                <div class="summary-rows" id="summary-rows">
+                  <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="cart-subtotal">₹0</span>
+                  </div>
+                  <div class="summary-row">
+                    <span>Shipping</span>
+                    <span id="cart-shipping">Calculate below</span>
+                  </div>
+                  <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="cart-total">₹0</span>
+                  </div>
+                </div>
+
+                <!-- International Shipping Quote -->
+                <div class="shipping-quote-section" style="margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
+                  <h4 style="font-family: var(--font-display); font-size: var(--fs-md); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">🌍 International Delivery</h4>
+                  <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-bottom: var(--sp-4);">Get live DDP shipping quotes for your destination</p>
+                  
+                  <div class="shipping-quote-form">
+                    <div class="form-row">
+                      <div class="form-group" style="flex:1;">
+                        <label for="shipping-country">Destination Country</label>
+                        <select id="shipping-country" required>
+                          <option value="">Select country…</option>
+                          <option value="US">United States</option>
+                          <option value="GB">United Kingdom</option>
+                          <option value="CA">Canada</option>
+                          <option value="AU">Australia</option>
+                          <option value="AE">United Arab Emirates</option>
+                          <option value="SA">Saudi Arabia</option>
+                          <option value="SG">Singapore</option>
+                          <option value="NZ">New Zealand</option>
+                          <option value="DE">Germany</option>
+                          <option value="FR">France</option>
+                          <option value="IT">Italy</option>
+                          <option value="NL">Netherlands</option>
+                          <option value="ES">Spain</option>
+                          <option value="QA">Qatar</option>
+                          <option value="KW">Kuwait</option>
+                          <option value="OM">Oman</option>
+                          <option value="BH">Bahrain</option>
+                          <option value="JP">Japan</option>
+                          <option value="KR">South Korea</option>
+                          <option value="CH">Switzerland</option>
+                          <option value="SE">Sweden</option>
+                          <option value="NO">Norway</option>
+                          <option value="DK">Denmark</option>
+                          <option value="BE">Belgium</option>
+                          <option value="AT">Austria</option>
+                          <option value="IE">Ireland</option>
+                          <option value="PT">Portugal</option>
+                          <option value="GR">Greece</option>
+                          <option value="PL">Poland</option>
+                          <option value="CZ">Czech Republic</option>
+                          <option value="HU">Hungary</option>
+                          <option value="RO">Romania</option>
+                          <option value="BG">Bulgaria</option>
+                          <option value="HR">Croatia</option>
+                          <option value="SI">Slovenia</option>
+                          <option value="SK">Slovakia</option>
+                          <option value="LT">Lithuania</option>
+                          <option value="LV">Latvia</option>
+                          <option value="EE">Estonia</option>
+                          <option value="FI">Finland</option>
+                          <option value="LU">Luxembourg</option>
+                          <option value="MT">Malta</option>
+                          <option value="CY">Cyprus</option>
+                          <option value="IS">Iceland</option>
+                          <option value="TR">Turkey</option>
+                          <option value="IL">Israel</option>
+                          <option value="ZA">South Africa</option>
+                          <option value="BR">Brazil</option>
+                          <option value="MX">Mexico</option>
+                          <option value="AR">Argentina</option>
+                          <option value="CL">Chile</option>
+                          <option value="CO">Colombia</option>
+                          <option value="PE">Peru</option>
+                          <option value="TH">Thailand</option>
+                          <option value="MY">Malaysia</option>
+                          <option value="ID">Indonesia</option>
+                          <option value="PH">Philippines</option>
+                          <option value="VN">Vietnam</option>
+                          <option value="IN">India</option>
+                        </select>
+                      </div>
+                      <div class="form-group" style="flex:1;">
+                        <label for="shipping-postcode">Postal Code</label>
+                        <input type="text" id="shipping-postcode" placeholder="e.g. 95134" required maxlength="20" />
+                      </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="getShippingQuote()" id="get-quote-btn" style="width: 100%; margin-top: var(--sp-3);">Get Shipping Quote</button>
+                    <p class="shipping-note" id="shipping-note" style="display: none; margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--clr-text-secondary);"></p>
+                  </div>
+
+                  <div class="shipping-options" id="shipping-options" style="display: none; margin-top: var(--sp-4);"></div>
+                </div>
+
+                <!-- Delivery Address Form (shown after quote) -->
+                <div class="shipping-address-form" id="shipping-address-form" style="display: none; margin-top: var(--sp-6); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
+                  <h5 style="font-family: var(--font-display); font-size: var(--fs-sm); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">📍 Delivery Address</h5>
+                  <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
+                    <div class="form-group" style="flex:1;">
+                      <label for="shipping-first-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">First Name *</label>
+                      <input type="text" id="shipping-first-name" placeholder="First Name" maxlength="100" required style="width:100%;" />
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                      <label for="shipping-last-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Last Name *</label>
+                      <input type="text" id="shipping-last-name" placeholder="Last Name" maxlength="100" required style="width:100%;" />
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom: var(--sp-2);">
+                    <label for="shipping-address" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Street Address *</label>
+                    <input type="text" id="shipping-address" placeholder="House/Flat number, Street name" maxlength="200" required style="width:100%;" />
+                  </div>
+                  <div class="form-group" style="margin-bottom: var(--sp-2);">
+                    <label for="shipping-address2" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Apartment, Suite, Unit (optional)</label>
+                    <input type="text" id="shipping-address2" placeholder="Apartment, unit, landmark, etc." maxlength="200" style="width:100%;" />
+                  </div>
+                  <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
+                    <div class="form-group" style="flex:1;">
+                      <label for="shipping-city" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">City *</label>
+                      <input type="text" id="shipping-city" placeholder="e.g. San Jose" maxlength="100" required style="width:100%;" />
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                      <label for="shipping-state" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">State / Province *</label>
+                      <input type="text" id="shipping-state" placeholder="e.g. CA" maxlength="100" required style="width:100%;" />
+                    </div>
+                  </div>
+                  <div class="form-group" style="margin-bottom: var(--sp-2);">
+                    <label for="shipping-phone" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Recipient Phone Number *</label>
+                    <input type="tel" id="shipping-phone" placeholder="e.g. +1 555 123 4567" maxlength="30" required style="width:100%;" />
+                  </div>
+                </div>
+
+                <!-- Checkout Button -->
+                <button class="btn btn-primary btn-lg" onclick="handleCheckout()" id="checkout-btn" style="width: 100%; margin-top: var(--sp-6);" disabled>Proceed to Checkout</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-brand"><div class="nav-brand-icon">🥜</div><div class="nav-brand-text">Bandhuprem Foods</div></a>
+          <p class="footer-brand-desc">Premium cashews and almonds, handpicked from the finest orchards. Delivering nature's best to your doorstep since 2020.</p>
+          <div class="footer-socials">
+            <a href="#" class="footer-social-link" aria-label="Facebook">f</a>
+            <a href="#" class="footer-social-link" aria-label="Instagram">📷</a>
+            <a href="#" class="footer-social-link" aria-label="Twitter">𝕏</a>
+            <a href="#" class="footer-social-link" aria-label="YouTube">▶</a>
+          </div>
+        </div>
+        <div><h4 class="footer-col-title">Quick Links</h4><ul class="footer-links"><li><a href="index.html">Home</a></li><li><a href="orders.html">My Orders</a></li><li><a href="cart.html">Cart</a></li></ul></div>
+        <div><h4 class="footer-col-title">Support</h4><ul class="footer-links"><li><a href="#">FAQs</a></li><li><a href="#">Shipping Info</a></li><li><a href="#">Returns</a></li><li><a href="#">Contact Us</a></li><li><a href="#">Privacy Policy</a></li></ul></div>
+        <div><h4 class="footer-col-title">Contact</h4><ul class="footer-links"><li><a href="mailto:hello@rnsdryfruits.com">hello@rnsdryfruits.com</a></li><li><a href="tel:+919876543210">+91 98765 43210</a></li><li><a href="#">Mumbai, India</a></li></ul></div>
+      </div>
+      <div class="footer-bottom"><p>© 2024 Bandhuprem Foods. All rights reserved.</p><div class="footer-payments"><span class="footer-payment-icon">VISA</span><span class="footer-payment-icon">MC</span><span class="footer-payment-icon">UPI</span><span class="footer-payment-icon">COD</span></div></div>
+    </div>
+  </footer>
+
+  <!-- ═══════ TRACKING MODAL ═══════ -->
+  <div class="auth-overlay" id="tracking-overlay">
+    <div class="auth-modal tracking-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeTracking()">✕</button>
+      <div class="auth-modal-header"><a href="#" class="nav-brand"><div class="nav-brand-icon">📦</div><div class="nav-brand-text">Track Your Order</div></a></div>
+      <div class="auth-form-container" id="tracking-content"><p style="text-align:center; color: var(--clr-text-secondary);">Loading tracking details…</p></div>
+    </div>
+  </div>
+
+  <!-- ═══════ AUTH MODAL ═══════ -->
+  <div class="auth-overlay" id="auth-overlay">
+    <div class="auth-modal" style="position:relative;">
+      <button class="auth-close" onclick="closeAuth()">✕</button>
+      <div class="auth-modal-header"><a href="#" class="nav-brand"><div class="nav-brand-icon">🥜</div><div class="nav-brand-text">Bandhuprem Foods</div></a></div>
+      <div class="auth-form-container">
+        <div class="auth-alert" id="auth-alert" style="display: none;" role="alert"></div>
+        <form class="auth-form active" id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="Enter your email" required autocomplete="email" maxlength="254" /></div>
+          <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">We'll email you a one-time login code. No password needed.</p>
+          <div class="auth-divider">or continue with</div>
+          <div class="social-login-btns"><button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button><button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button></div>
+        </form>
+        <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
+          <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-2); text-align:center;">Enter the 6-digit code sent to<br /><strong id="otp-email-display"></strong></p>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-muted); margin-bottom: var(--sp-4); text-align:center;">💡 You can enter the code below, or click the link in the email to log in directly.</p>
+          <div class="form-group"><label for="otp-code">Verification Code</label><input type="text" id="otp-code" placeholder="6-digit code" required maxlength="6" minlength="6" pattern="[0-9]{6}" inputmode="numeric" autocomplete="one-time-code" style="letter-spacing: 0.5em; text-align:center; font-size: 1.25rem;" /></div>
+          <button type="submit" class="btn btn-primary btn-lg">Verify & Sign In</button>
+          <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">Didn't get it? <a href="#" onclick="resendOtp(event)" style="color: var(--clr-primary);">Resend code</a> · <a href="#" onclick="backToAuth(event)" style="color: var(--clr-primary);">Use different email</a></p>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ TOAST CONTAINER ═══════ -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Supabase JS SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -24,7 +24,7 @@
 
       <ul class="nav-links" id="nav-links">
         <li><a href="index.html" class="nav-link active" data-nav="home">Home</a></li>
-        <li><a href="orders.html" class="nav-link" data-nav="orders" id="nav-orders">My Orders</a></li>
+        <li><a href="#" class="nav-link" data-nav="orders" id="nav-orders" onclick="navigateToOrders()">My Orders</a></li>
       </ul>
 
       <div class="nav-actions">
@@ -44,7 +44,7 @@
               </div>
             </div>
             <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
-            <a href="orders.html" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown();">
+            <a href="#" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); navigateToOrders();">
               📦 My Orders
             </a>
             <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">
@@ -55,7 +55,7 @@
             </a>
           </div>
         </div>
-        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="openCart()">
+        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="navigateToCart()">
           🛒
           <span class="badge" id="cart-badge">0</span>
         </button>

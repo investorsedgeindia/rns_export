@@ -35,12 +35,12 @@
               </div>
             </div>
             <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
-            <a href="orders.html" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown();">📦 My Orders</a>
+            <a href="#" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); navigateToOrders();">📦 My Orders</a>
             <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">🚪 Sign Out</button>
             <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem" onclick="closeAccountDropdown(); openAuth();">🔐 Sign In / Register</a>
           </div>
         </div>
-        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="openCart()">🛒<span class="badge" id="cart-badge">0</span></button>
+        <button class="nav-action-btn" id="cart-btn" aria-label="Cart" onclick="navigateToCart()">🛒<span class="badge" id="cart-badge">0</span></button>
         <button class="nav-toggle" id="nav-toggle" aria-label="Menu" onclick="toggleMobileMenu()"><span></span><span></span><span></span></button>
       </div>
     </div>
