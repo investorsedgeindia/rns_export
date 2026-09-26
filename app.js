@@ -477,9 +477,6 @@ function renderCartPage() {
   // Render cart items
   itemsList.innerHTML = cart.map(item => `
     <div class="cart-page-item" data-id="${item.id}">
-      <div class="cart-page-item-img">
-        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />
-      </div>
       <div class="cart-page-item-info">
         <div class="cart-page-item-title">${escapeHtml(item.name)}</div>
         <div class="cart-page-item-variant">${escapeHtml(item.weight)}</div>
