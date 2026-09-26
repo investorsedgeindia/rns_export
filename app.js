@@ -432,6 +432,77 @@ function closeCart() {
   document.body.style.overflow = '';
 }
 
+// ── Cart Page Rendering ──
+function renderCartPage() {
+  const itemsList = document.getElementById('cart-items-list');
+  const emptyState = document.getElementById('cart-empty-state');
+  const cartContent = document.getElementById('cart-content');
+  const checkoutBtn = document.getElementById('checkout-btn');
+
+  if (!itemsList) return;
+
+  if (cart.length === 0) {
+    if (emptyState) emptyState.style.display = 'block';
+    if (cartContent) cartContent.style.display = 'none';
+    if (checkoutBtn) checkoutBtn.disabled = true;
+    return;
+  }
+
+  if (emptyState) emptyState.style.display = 'none';
+  if (cartContent) cartContent.style.display = 'block';
+  if (checkoutBtn) checkoutBtn.disabled = false;
+
+  // Render cart items
+  itemsList.innerHTML = cart.map(item => `
+    <div class="cart-page-item" data-id="${item.id}">
+      <div class="cart-page-item-img">
+        <img src="${escapeHtml(item.image)}" alt="${escapeHtml(item.name)}" />
+      </div>
+      <div class="cart-page-item-info">
+        <div class="cart-page-item-title">${escapeHtml(item.name)}</div>
+        <div class="cart-page-item-variant">${escapeHtml(item.weight)}</div>
+        <div class="cart-page-item-controls">
+          <div class="qty-control">
+            <button class="qty-btn" onclick="updateQty(${Number(item.id)}, -1)" aria-label="Decrease quantity">−</button>
+            <span class="qty-value">${Number(item.qty)}</span>
+            <button class="qty-btn" onclick="updateQty(${Number(item.id)}, 1)" aria-label="Increase quantity">+</button>
+          </div>
+          <span class="cart-page-item-price">₹${(Number(item.price) * Number(item.qty)).toLocaleString('en-IN')}</span>
+          <button class="cart-page-item-remove" onclick="removeFromCart(${Number(item.id)})" aria-label="Remove item">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Update summary
+  updateCartPageSummary();
+}
+
+function updateCartPageSummary() {
+  const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const shippingCost = selectedShippingService && shippingQuote
+    ? Number(selectedShippingService.subtotal_fee || selectedShippingService.price?.logistic_fee || 0)
+    : 0;
+  const total = subtotal + shippingCost;
+  const currency = shippingQuote?.currency || 'INR';
+
+  const subtotalEl = document.getElementById('cart-subtotal');
+  const shippingEl = document.getElementById('cart-shipping');
+  const totalEl = document.getElementById('cart-total');
+
+  if (subtotalEl) subtotalEl.textContent = `${currency} ${subtotal.toLocaleString('en-IN')}`;
+  if (shippingEl) {
+    if (selectedShippingService && shippingQuote) {
+      shippingEl.textContent = `${currency} ${shippingCost.toLocaleString('en-IN')}`;
+    } else if (shippingQuote) {
+      shippingEl.textContent = 'Select a service';
+    } else {
+      shippingEl.textContent = 'Calculate below';
+    }
+  }
+  if (totalEl) totalEl.textContent = `${currency} ${total.toLocaleString('en-IN')}`;
+}
+
 // ── Auth-gated Navigation ──
 async function navigateToOrders() {
   if (await requireAuth()) {
