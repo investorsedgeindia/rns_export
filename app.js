@@ -399,8 +399,8 @@ function updateCartUI() {
   const cartFooter = document.getElementById('cart-footer');
   if (cartFooter) cartFooter.style.display = cart.length === 0 ? 'none' : 'block';
 
-  const shippingQuote = document.getElementById('shipping-quote');
-  if (shippingQuote) shippingQuote.style.display = cart.length === 0 ? 'none' : 'block';
+  const shippingQuoteSection = document.getElementById('shipping-quote');
+  if (shippingQuoteSection) shippingQuoteSection.style.display = cart.length === 0 ? 'none' : 'block';
 }
 
 function renderCartItems() {
