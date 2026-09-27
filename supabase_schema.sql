@@ -79,6 +79,9 @@ create index if not exists orders_customer_idx
 create index if not exists orders_shipglobal_tracking_idx
   on public.orders (shipglobal_tracking) where shipglobal_tracking is not null;
 
+create index if not exists orders_shipglobal_order_ref_idx
+  on public.orders (shipglobal_order_reference) where shipglobal_order_reference is not null;
+
 -- Idempotent migration: add cancellation columns
 alter table public.orders
   add column if not exists shipglobal_cancelled boolean not null default false,
@@ -128,7 +131,8 @@ values
   ('SHIPGLOBAL_USERNAME', 'bandhupremagency@gmail.com', 'ShipGlobal vendor email / username'),
   ('SHIPGLOBAL_PASSWORD', '#Include111', 'ShipGlobal vendor API password / key'),
   ('SHIPGLOBAL_BASE_URL', 'https://app.shipglobal.in', 'ShipGlobal API base URL'),
-  ('SHIPGLOBAL_CSB5_STATUS', '1', '1 for commercial Indian export, 0 for normal')
+  ('SHIPGLOBAL_CSB5_STATUS', '1', '1 for commercial Indian export, 0 for normal'),
+  ('SHIPGLOBAL_WEBHOOK_SECRET', '', 'Optional: shared secret for webhook verification (set in ShipGlobal dashboard)')
 on conflict (key) do update set
   value = excluded.value,
   description = excluded.description,
