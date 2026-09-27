@@ -1,0 +1,150 @@
+name: Sync ShipGlobal Orders
+
+on:
+  schedule:
+    # Run every 15 minutes during business hours (6 AM - 10 PM IST)
+    # Adjust cron as needed: '*/15 0-22 * * *' for 24h, or specific hours
+    - cron: '*/15 0-22 * * *'  # Every 15 min, midnight to 10 PM UTC (approx 5:30 AM - 3:30 AM IST next day)
+    # For strictly IST business hours (9 AM - 9 PM IST = 3:30 AM - 3:30 PM UTC):
+    # - cron: '*/15 3-15 * * *'
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+permissions:
+  contents: read
+
+jobs:
+  sync-shipglobal-orders:
+    name: Sync Orders with ShipGlobal
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync all pending orders
+        id: sync
+        run: |
+          echo "🔄 Starting ShipGlobal sync at $(date -u)"
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/sync-all-orders" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          echo "📡 HTTP Status: $HTTP_CODE"
+          echo "📦 Response: $BODY"
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Sync failed with HTTP $HTTP_CODE"
+            echo "::error::ShipGlobal sync failed: $BODY"
+            exit 1
+          fi
+          
+          # Parse results
+          SYNCED=$(echo "$BODY" | jq -r '.synced // 0')
+          FAILED=$(echo "$BODY" | jq -r '.failed // 0')
+          SUCCESS=$(echo "$BODY" | jq -r '.success // false')
+          
+          echo "✅ Synced: $SYNCED orders"
+          echo "❌ Failed: $FAILED orders"
+          
+          if [ "$SUCCESS" != "true" ]; then
+            echo "❌ Sync reported failure"
+            echo "::error::ShipGlobal sync returned success=false"
+            exit 1
+          fi
+          
+          # Output for summary
+          echo "synced=$SYNCED" >> $GITHUB_OUTPUT
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Post summary
+        if: always()
+        run: |
+          echo "## ShipGlobal Sync Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Synced | ${{ steps.sync.outputs.synced }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Failed | ${{ steps.sync.outputs.failed }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Time | $(date -u) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ steps.sync.outputs.failed }}" -gt 0 ]; then
+            echo "⚠️ Some orders failed to sync. Check workflow logs for details." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ All orders synced successfully." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Notify on failure (optional)
+        if: failure()
+        run: |
+          echo "🚨 ShipGlobal sync failed"
+          # Add Slack/Discord/Email notification here if needed
+          # Example for Slack:
+          # curl -X POST -H 'Content-type: application/json' \
+          #   --data '{"text":"🚨 ShipGlobal sync failed: ${{ github.workflow }} run ${{ github.run_id }}"}' \
+          #   ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Optional: Daily summary report
+  daily-summary:
+    name: Daily Order Summary
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    if: github.event_name == 'schedule' && github.event.schedule == '0 3 * * *'  # 3 AM UTC = 8:30 AM IST
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch order statistics
+        id: stats
+        run: |
+          echo "📊 Fetching daily order stats..."
+          
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET \
+            "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/rest/v1/orders?select=id,status,total,created_at&created_at=gte.$(date -u -d '1 day ago' +%Y-%m-%d)" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --max-time 30)
+          
+          HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+          
+          if [ "$HTTP_CODE" -ne 200 ]; then
+            echo "❌ Failed to fetch orders: $BODY"
+            exit 1
+          fi
+          
+          TOTAL=$(echo "$BODY" | jq 'length')
+          PROCESSING=$(echo "$BODY" | jq '[.[] | select(.status=="processing")] | length')
+          SHIPPED=$(echo "$BODY" | jq '[.[] | select(.status=="shipped")] | length')
+          DELIVERED=$(echo "$BODY" | jq '[.[] | select(.status=="delivered")] | length')
+          CANCELLED=$(echo "$BODY" | jq '[.[] | select(.status=="cancelled")] | length')
+          REVENUE=$(echo "$BODY" | jq '[.[] | .total] | add // 0')
+          
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo "processing=$PROCESSING" >> $GITHUB_OUTPUT
+          echo "shipped=$SHIPPED" >> $GITHUB_OUTPUT
+          echo "delivered=$DELIVERED" >> $GITHUB_OUTPUT
+          echo "cancelled=$CANCELLED" >> $GITHUB_OUTPUT
+          echo "revenue=$REVENUE" >> $GITHUB_OUTPUT
+
+      - name: Post daily summary
+        run: |
+          echo "## Daily Order Summary ($(date -u +%Y-%m-%d))" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Orders | ${{ steps.stats.outputs.total }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Processing | ${{ steps.stats.outputs.processing }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Shipped | ${{ steps.stats.outputs.shipped }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Delivered | ${{ steps.stats.outputs.delivered }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Cancelled | ${{ steps.stats.outputs.cancelled }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Revenue** | **₹${{ steps.stats.outputs.revenue }}** |" >> $GITHUB_STEP_SUMMARY
