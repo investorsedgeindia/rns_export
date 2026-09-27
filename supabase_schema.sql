@@ -311,7 +311,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_recalc_totals on public.orders;
+drop trigger if exists aaa_recalc_totals on public.orders;
 -- 'aaa_' prefix forces this trigger to run FIRST (alphabetical order).
 -- The strict check must see the CLIENT's original total before recalc overwrites it.
 create trigger aaa_recalc_totals
@@ -362,7 +362,7 @@ begin
 end;
 $$;
 
-drop trigger if exists trg_strict_price_check on public.orders;
+drop trigger if exists zzz_strict_price_check on public.orders;
 -- 'zzz_' prefix forces this trigger to run LAST.
 create trigger zzz_strict_price_check
   before insert on public.orders
