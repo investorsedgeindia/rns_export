@@ -1257,19 +1257,90 @@ async function renderOrders() {
 
     if (!data || data.length === 0) {
       list.innerHTML = `
-        <div style="text-align:center; padding: var(--sp-8); color: var(--clr-text-secondary);">
-          <div style="font-size: 3rem; margin-bottom: var(--sp-3);">📦</div>
-          <h3 style="margin-bottom: var(--sp-2);">No orders yet</h3>
+        <div class="orders-empty-state">
+          <div class="icon">📦</div>
+          <h3>No orders yet</h3>
           <p>Your order history will appear here once you place your first order.</p>
+          <a href="index.html" class="btn btn-primary btn-lg">← Continue Shopping</a>
         </div>
       `;
       return;
     }
 
     list.innerHTML = data.map(order => renderOrderCard(order)).join('');
+
+    // Auto-sync orders with tracking that haven't been synced in 30 minutes
+    autoSyncOrders(data);
   } catch (err) {
     console.error('renderOrders error:', err);
     list.innerHTML = `<div style="text-align:center; color: var(--clr-danger, #c0392b); padding: var(--sp-6);">Could not load orders. Please refresh and try again.</div>`;
+  }
+}
+
+// ── Auto-sync orders with ShipGlobal ──
+async function autoSyncOrders(orders) {
+  const now = Date.now();
+  const SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
+  
+  for (const order of orders) {
+    const tracking = order.shipglobal_tracking;
+    const lastSynced = order.shipglobal_last_synced_at ? new Date(order.shipglobal_last_synced_at).getTime() : 0;
+    const isDelivered = order.status === 'delivered';
+    const isCancelled = order.status === 'cancelled' || Boolean(order.shipglobal_cancelled);
+    
+    // Skip if no tracking, already delivered/cancelled, or synced recently
+    if (!tracking || isDelivered || isCancelled || (now - lastSynced < SYNC_INTERVAL_MS)) {
+      continue;
+    }
+    
+    // Silently sync in background
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (!session?.access_token) continue;
+
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/track-shipment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ tracking }),
+      });
+
+      const result = await response.json();
+      if (!response.ok || !result.success) continue;
+
+      const awbInfo = result.data?.awbInfo || {};
+      const events = Array.isArray(result.data?.awbEvents) ? result.data.awbEvents : [];
+      
+      const newStatus = mapShipGlobalStatus(awbInfo.awb_status);
+      const progress = calculateProgressFromStatus(newStatus, awbInfo.awb_status);
+
+      // Only update if status actually changed
+      if (newStatus !== order.status || progress !== order.progress) {
+        await supabaseClient
+          .from('orders')
+          .update({
+            status: newStatus,
+            progress,
+            shipglobal_status: awbInfo.awb_status || null,
+            shipglobal_status_code: awbInfo.awb_status_code || null,
+            shipglobal_events: events,
+            shipglobal_last_synced_at: new Date().toISOString(),
+            shipglobal_tracking: awbInfo.awb_number || tracking,
+            shipglobal_service: awbInfo.partner_name || awbInfo.carrier || null,
+            shipglobal_label: result.data?.label || null,
+          })
+          .eq('id', order.id);
+        
+        // Trigger re-render to show updated status
+        console.log(`[Auto-sync] Order ${order.id.slice(0,8)} status updated: ${order.status} → ${newStatus}`);
+        // Don't await renderOrders() here to avoid race conditions
+        // The user can manually refresh or click sync button
+      }
+    } catch (err) {
+      console.warn('[Auto-sync] Failed for order', order.id.slice(0,8), err);
+    }
   }
 }
 
@@ -1285,6 +1356,10 @@ function renderOrderCard(order) {
   const shipService = escapeHtml(order.shipglobal_service || order.shipping_service || '');
   const hasTracking = Boolean(tracking);
 
+  // Check if recently synced (within 5 minutes)
+  const lastSynced = order.shipglobal_last_synced_at ? new Date(order.shipglobal_last_synced_at).getTime() : 0;
+  const isRecentlySynced = (Date.now() - lastSynced < 5 * 60 * 1000) && lastSynced > 0;
+
   const items = Array.isArray(order.items) ? order.items : [];
   const thumbs = items.map(it => `
     <div class="order-item-thumb" title="${escapeHtml(it.name)}">
@@ -1292,8 +1367,11 @@ function renderOrderCard(order) {
     </div>
   `).join('');
 
-  const itemLines = items.map(it => `
-    <span style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(it.name)} × ${Number(it.qty)}</span>
+  const itemDetails = items.map(it => `
+    <div class="order-items-text">
+      <span class="order-item-name">${escapeHtml(it.name)}</span>
+      <span class="order-item-meta">${escapeHtml(it.weight)} × ${Number(it.qty)}</span>
+    </div>
   `).join('');
 
   const isCancelled = order.status === 'cancelled' || Boolean(order.shipglobal_cancelled);
@@ -1311,16 +1389,19 @@ function renderOrderCard(order) {
       </div>` : ''}
       ${shipStatus ? `<div class="order-tracking-row">
         <span class="order-tracking-label">Status</span>
-        <span class="order-tracking-value">${shipStatus}</span>
+        <span class="order-tracking-value">${shipStatus} ${isRecentlySynced ? '<span class="synced-badge">Synced</span>' : ''}</span>
       </div>` : ''}
       ${isCancelled ? `
         <div style="margin-top: var(--sp-2); padding: var(--sp-2); background: rgba(192, 57, 43, 0.08); border-radius: var(--radius-sm); border-left: 3px solid var(--clr-danger, #c0392b);">
           <span style="font-size: var(--fs-xs); color: var(--clr-danger, #c0392b); font-weight: 600;">🚫 Shipment Cancelled / Refund Processed</span>
         </div>
       ` : `
-        <div style="display:flex; gap: var(--sp-2); margin-top: var(--sp-2); flex-wrap: wrap;">
+        <div class="order-tracking-actions">
           <button class="btn btn-secondary btn-sm" onclick="openTracking('${escapeHtml(tracking)}')">
             🚚 Track Shipment
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="syncOrderStatus('${escapeHtml(tracking)}', '${escapeHtml(order.id)}', this)">
+            🔄 Sync Status
           </button>
           ${!isDelivered ? `
             <button class="btn btn-secondary btn-sm" style="color: var(--clr-danger, #c0392b); border-color: rgba(192, 57, 43, 0.35);" onclick="cancelOrder('${escapeHtml(tracking)}')">
@@ -1346,9 +1427,7 @@ function renderOrderCard(order) {
       <div class="order-card-body">
         <div class="order-items-preview">
           ${thumbs}
-          <div style="display:flex; flex-direction:column; justify-content:center; margin-left: var(--sp-2);">
-            ${itemLines}
-          </div>
+          ${itemDetails}
         </div>
 
         <div class="order-timeline">
@@ -1517,6 +1596,120 @@ async function downloadShippingLabel(tracking) {
       btn.disabled = false;
       btn.innerHTML = '📄 Download Shipping Label';
     }
+  }
+}
+
+// ── Sync Order Status with ShipGlobal ──
+async function syncOrderStatus(tracking, orderId, btnEl = null) {
+  if (!tracking) {
+    showToast('No tracking number available', 'error');
+    return;
+  }
+
+  if (btnEl) {
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<span class="btn-spinner"></span> Syncing…';
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/track-shipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ tracking }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not sync status');
+    }
+
+    // Update order in database with latest ShipGlobal status
+    const awbInfo = result.data?.awbInfo || {};
+    const events = Array.isArray(result.data?.awbEvents) ? result.data.awbEvents : [];
+    
+    const newStatus = mapShipGlobalStatus(awbInfo.awb_status);
+    const progress = calculateProgressFromStatus(newStatus, awbInfo.awb_status);
+
+    const { error: updateError } = await supabaseClient
+      .from('orders')
+      .update({
+        status: newStatus,
+        progress,
+        shipglobal_status: awbInfo.awb_status || null,
+        shipglobal_status_code: awbInfo.awb_status_code || null,
+        shipglobal_events: events,
+        shipglobal_last_synced_at: new Date().toISOString(),
+        shipglobal_tracking: awbInfo.awb_number || tracking,
+        shipglobal_service: awbInfo.partner_name || awbInfo.carrier || null,
+        shipglobal_label: result.data?.label || null,
+      })
+      .eq('id', orderId);
+
+    if (updateError) throw updateError;
+
+    showToast(`Status updated: ${newStatus}`, 'success');
+    await renderOrders();
+  } catch (err) {
+    console.error('syncOrderStatus error:', err);
+    showToast(err.message || 'Could not sync status. Please try again.', 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = '🔄 Sync Status';
+    }
+  }
+}
+
+function mapShipGlobalStatus(shipGlobalStatus) {
+  if (!shipGlobalStatus) return 'processing';
+  const status = shipGlobalStatus.toLowerCase();
+  
+  // Delivered states
+  if (status.includes('delivered') || status.includes('deliverd') || 
+      status.includes('completed') || status.includes('successful delivery')) {
+    return 'delivered';
+  }
+  
+  // Shipped/In transit states
+  if (status.includes('shipped') || status.includes('in transit') || 
+      status.includes('dispatched') || status.includes('out for delivery') ||
+      status.includes('pickup') || status.includes('on the way') ||
+      status.includes('transit') || status.includes('en route')) {
+    return 'shipped';
+  }
+  
+  // Cancelled/Returned
+  if (status.includes('cancel') || status.includes('return') || 
+      status.includes('refund') || status.includes('failed')) {
+    return 'cancelled';
+  }
+  
+  // Processing/Label created
+  if (status.includes('label') || status.includes('created') || 
+      status.includes('pending') || status.includes('booking') ||
+      status.includes('manifested') || status.includes('ready')) {
+    return 'processing';
+  }
+  
+  return 'processing';
+}
+
+function calculateProgressFromStatus(mappedStatus, rawStatus) {
+  switch (mappedStatus) {
+    case 'delivered': return 100;
+    case 'shipped': return 75;
+    case 'cancelled': return 0;
+    case 'processing':
+    default:
+      if (rawStatus && rawStatus.toLowerCase().includes('label')) return 50;
+      if (rawStatus && rawStatus.toLowerCase().includes('pickup')) return 40;
+      return 33;
   }
 }
 
