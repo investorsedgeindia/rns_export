@@ -222,22 +222,33 @@
       
       // Check admin access
       if (isLoggedIn && currentUser) {
-        const { data } = await supabaseClient
-          .from('customers')
-          .select('is_admin')
-          .eq('id', currentUser.id)
-          .single();
-        
-        if (!data?.is_admin) {
-          showToast('Admin access required', 'error');
-          setTimeout(() => window.location.href = 'index.html', 1500);
-          return;
+        try {
+          const { data, error } = await supabaseClient
+            .from('customers')
+            .select('is_admin, name, email')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (error) {
+            console.error('Admin check error:', error);
+            showToast('Database not migrated. Please run supabase_schema.sql in Supabase SQL Editor first.', 'error');
+            return;
+          }
+          
+          if (!data?.is_admin) {
+            showToast('Admin access required. Please set is_admin = true for your account in Supabase.', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+          }
+          
+          adminCurrentPage = 1;
+          adminTotalPages = 1;
+          initAdminFilters();
+          await renderAdminOrders();
+        } catch (err) {
+          console.error('Admin initialization error:', err);
+          showToast('Admin setup error: ' + escapeHtml(err.message), 'error');
         }
-        
-        adminCurrentPage = 1;
-        adminTotalPages = 1;
-        initAdminFilters();
-        await renderAdminOrders();
       } else {
         // Redirect to login with return to admin
         authRedirectTarget = 'admin';
