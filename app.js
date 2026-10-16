@@ -1938,3 +1938,669 @@ document.addEventListener('click', (e) => {
     closeAccountDropdown();
   }
 });
+
+// ═══════ ADMIN FUNCTIONS ═══════
+let adminCurrentPage = 1;
+let adminTotalPages = 1;
+let adminPageSize = 20;
+let adminAllOrders = [];
+let adminFilteredOrders = [];
+
+// ── Check if user is admin ──
+async function checkAdminAccess() {
+  if (!isLoggedIn || !currentUser) return false;
+  try {
+    const { data, error } = await supabaseClient
+      .from('customers')
+      .select('is_admin, name, email')
+      .eq('id', currentUser.id)
+      .single();
+    if (error || !data?.is_admin) return false;
+    return true;
+  } catch (err) {
+    return false;
+  }
+}
+
+// ── Render Admin Orders Page ──
+async function renderAdminOrders() {
+  const body = document.getElementById('admin-orders-body');
+  const statsEls = {
+    total: document.getElementById('stat-total'),
+    processing: document.getElementById('stat-processing'),
+    shipped: document.getElementById('stat-shipped'),
+    delivered: document.getElementById('stat-delivered'),
+    revenue: document.getElementById('stat-revenue'),
+  };
+
+  if (!body) return;
+
+  body.innerHTML = `
+    <tr class="loading-row">
+      <td colspan="10"><div class="orders-loading"><div class="spinner"></div>Loading all orders…</div></td>
+    </tr>
+  `;
+
+  try {
+    // Fetch ALL orders with customer info (admin bypasses RLS via service_role or admin policy)
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select(`
+        id,
+        customer_id,
+        items,
+        total,
+        status,
+        progress,
+        shipping_country,
+        shipping_postcode,
+        shipping_service,
+        shipping_cost,
+        shipping_currency,
+        shipglobal_tracking,
+        shipglobal_service,
+        shipglobal_status,
+        shipglobal_status_code,
+        shipglobal_events,
+        shipglobal_last_synced_at,
+        shipglobal_created,
+        shipglobal_cancelled,
+        created_at,
+        customers!inner (
+          email,
+          name,
+          phone
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    adminAllOrders = data || [];
+    adminTotalPages = Math.ceil(adminAllOrders.length / adminPageSize);
+    adminCurrentPage = Math.min(adminCurrentPage, adminTotalPages || 1);
+
+    applyAdminFilters();
+    renderAdminStats(adminAllOrders);
+    renderAdminPagination();
+  } catch (err) {
+    console.error('renderAdminOrders error:', err);
+    body.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center; color: var(--clr-error); padding: var(--sp-6);">
+          Could not load orders: ${escapeHtml(err.message)}
+        </td>
+      </tr>
+    `;
+  }
+}
+
+// ── Apply filters and render table ──
+function applyAdminFilters() {
+  const searchEl = document.getElementById('admin-search');
+  const statusEl = document.getElementById('admin-status-filter');
+  const dateEl = document.getElementById('admin-date-filter');
+
+  const searchTerm = searchEl ? searchEl.value.toLowerCase() : '';
+  const statusFilter = statusEl ? statusEl.value : '';
+  const dateFilter = dateEl ? dateEl.value : '';
+
+  const now = new Date();
+
+  adminFilteredOrders = adminAllOrders.filter(order => {
+    // Search filter
+    if (searchTerm) {
+      const searchable = [
+        order.id,
+        order.customers?.email || '',
+        order.customers?.name || '',
+        order.shipglobal_tracking || '',
+        order.shipping_country || '',
+      ].join(' ').toLowerCase();
+      if (!searchable.includes(searchTerm)) return false;
+    }
+
+    // Status filter
+    if (statusFilter && order.status !== statusFilter) return false;
+
+    // Date filter
+    if (dateFilter) {
+      const orderDate = new Date(order.created_at);
+      if (dateFilter === 'today') {
+        if (orderDate.toDateString() !== now.toDateString()) return false;
+      } else if (dateFilter === 'week') {
+        const weekAgo = new Date(now);
+        weekAgo.setDate(now.getDate() - 7);
+        if (orderDate < weekAgo) return false;
+      } else if (dateFilter === 'month') {
+        const monthAgo = new Date(now);
+        monthAgo.setMonth(now.getMonth() - 1);
+        if (orderDate < monthAgo) return false;
+      } else if (dateFilter === 'year') {
+        const yearAgo = new Date(now);
+        yearAgo.setFullYear(now.getFullYear() - 1);
+        if (orderDate < yearAgo) return false;
+      }
+    }
+
+    return true;
+  });
+
+  renderAdminTable();
+  renderAdminPagination();
+}
+
+// ── Render admin stats ──
+function renderAdminStats(orders) {
+  const total = orders.length;
+  const processing = orders.filter(o => o.status === 'processing').length;
+  const shipped = orders.filter(o => o.status === 'shipped').length;
+  const delivered = orders.filter(o => o.status === 'delivered').length;
+  const cancelled = orders.filter(o => o.status === 'cancelled').length;
+  const revenue = orders.reduce((sum, o) => sum + Number(o.total || 0), 0);
+
+  const el = (id, val) => {
+    const e = document.getElementById(id);
+    if (e) e.textContent = val;
+  };
+
+  el('stat-total', total);
+  el('stat-processing', processing);
+  el('stat-shipped', shipped);
+  el('stat-delivered', delivered);
+  el('stat-revenue', `₹${revenue.toLocaleString('en-IN')}`);
+}
+
+// ── Render admin table body ──
+function renderAdminTable() {
+  const body = document.getElementById('admin-orders-body');
+  if (!body) return;
+
+  const start = (adminCurrentPage - 1) * adminPageSize;
+  const pageOrders = adminFilteredOrders.slice(start, start + adminPageSize);
+
+  if (pageOrders.length === 0) {
+    body.innerHTML = `
+      <tr>
+        <td colspan="10" style="text-align:center; padding: var(--sp-8); color: var(--clr-text-secondary);">
+          No orders found matching your filters.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  body.innerHTML = pageOrders.map(order => {
+    const customer = order.customers || {};
+    const date = new Date(order.created_at);
+    const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const shortId = order.id.slice(0, 8).toUpperCase();
+    const status = order.status || 'processing';
+    const progress = Number(order.progress) || 0;
+    const total = Number(order.total) || 0;
+    const currency = order.shipping_currency || 'INR';
+    const country = order.shipping_country || '—';
+    const tracking = order.shipglobal_tracking || '—';
+    const shipStatus = order.shipglobal_status || 'Not synced';
+    const shipService = order.shipglobal_service || order.shipping_service || '—';
+
+    // Quantity from items
+    const items = Array.isArray(order.items) ? order.items : [];
+    const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
+    const itemSummary = items.map(it => `${escapeHtml(it.name)} ×${it.qty}`).join(', ');
+    const itemSummaryShort = itemSummary.length > 40 ? itemSummary.slice(0, 40) + '…' : itemSummary;
+
+    // Last synced
+    const lastSynced = order.shipglobal_last_synced_at
+      ? `Synced: ${new Date(order.shipglobal_last_synced_at).toLocaleString('en-IN')}`
+      : 'Never synced';
+
+    const statusClass = `order-status-${status}`;
+    const isDelivered = status === 'delivered';
+    const isCancelled = status === 'cancelled' || Boolean(order.shipglobal_cancelled);
+
+    return `
+      <tr class="admin-order-row" data-id="${order.id}">
+        <td class="cell-order-id">
+          <span class="order-id-badge">#${shortId}</span>
+        </td>
+        <td class="cell-customer">
+          <div class="customer-name">${escapeHtml(customer.name || 'Unknown')}</div>
+          <div class="customer-email" style="font-size: var(--fs-xs); color: var(--clr-text-muted);">${escapeHtml(customer.email || '')}</div>
+          ${customer.phone ? `<div class="customer-phone" style="font-size: var(--fs-xs); color: var(--clr-text-muted);">${escapeHtml(customer.phone)}</div>` : ''}
+        </td>
+        <td class="cell-items">
+          <div class="items-qty"><strong>${totalQty}</strong> item${totalQty !== 1 ? 's' : ''}</div>
+          <div class="items-list" style="font-size: var(--fs-xs); color: var(--clr-text-secondary);">${escapeHtml(itemSummaryShort)}</div>
+        </td>
+        <td class="cell-total">
+          ${currency} ${total.toLocaleString('en-IN')}
+        </td>
+        <td class="cell-status">
+          <span class="order-status-badge ${statusClass}">${status}</span>
+        </td>
+        <td class="cell-country">
+          ${escapeHtml(country)}
+        </td>
+        <td class="cell-tracking">
+          ${tracking !== '—' ? `
+            <div class="tracking-value" style="font-family: monospace; font-size: var(--fs-xs);">${escapeHtml(tracking)}</div>
+            <div class="tracking-status" style="font-size: var(--fs-xs); color: var(--clr-text-muted);">${escapeHtml(shipStatus)}</div>
+          ` : '<span style="color: var(--clr-text-muted);">—</span>'}
+        </td>
+        <td class="cell-date">
+          ${escapeHtml(dateStr)}
+        </td>
+        <td class="cell-actions">
+          <div class="admin-actions">
+            <button class="btn btn-secondary btn-sm" onclick="openOrderDetail('${escapeHtml(order.id)}')" title="View details">👁</button>
+            <button class="btn btn-primary btn-sm" onclick="adminSyncOrder('${escapeHtml(order.id)}', '${escapeHtml(tracking)}', this)" title="Sync with ShipGlobal">🔄</button>
+            ${tracking !== '—' && !isDelivered && !isCancelled ? `
+              <button class="btn btn-secondary btn-sm" onclick="openTracking('${escapeHtml(tracking)}')" title="Track shipment">🚚</button>
+            ` : ''}
+            <select class="admin-status-select" onchange="adminUpdateStatus('${escapeHtml(order.id)}', this.value)" style="font-size: var(--fs-xs); padding: var(--sp-1) var(--sp-2); border-radius: var(--radius-sm); border: 1px solid var(--clr-border); background: var(--clr-bg-card);">
+              <option value="processing" ${status === 'processing' ? 'selected' : ''}>Processing</option>
+              <option value="shipped" ${status === 'shipped' ? 'selected' : ''}>Shipped</option>
+              <option value="delivered" ${status === 'delivered' ? 'selected' : ''}>Delivered</option>
+              <option value="cancelled" ${status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+            </select>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// ── Render admin pagination ──
+function renderAdminPagination() {
+  const pagination = document.getElementById('admin-pagination');
+  const pageInfo = document.getElementById('admin-page-info');
+  const prevBtn = document.getElementById('admin-prev-btn');
+  const nextBtn = document.getElementById('admin-next-btn');
+
+  if (!pagination) return;
+
+  if (adminFilteredOrders.length === 0) {
+    pagination.style.display = 'none';
+    return;
+  }
+
+  pagination.style.display = 'flex';
+  pageInfo.textContent = `Page ${adminCurrentPage} of ${adminTotalPages}`;
+  prevBtn.disabled = adminCurrentPage <= 1;
+  nextBtn.disabled = adminCurrentPage >= adminTotalPages;
+}
+
+// ── Change admin page ──
+function adminChangePage(delta) {
+  adminCurrentPage += delta;
+  if (adminCurrentPage < 1) adminCurrentPage = 1;
+  if (adminCurrentPage > adminTotalPages) adminCurrentPage = adminTotalPages;
+  renderAdminTable();
+  renderAdminPagination();
+}
+
+// ── Sync single order with ShipGlobal ──
+async function adminSyncOrder(orderId, tracking, btnEl) {
+  if (!tracking || tracking === '—') {
+    showToast('No tracking number available', 'error');
+    return;
+  }
+
+  if (btnEl) {
+    const original = btnEl.innerHTML;
+    btnEl.disabled = true;
+    btnEl.innerHTML = '<span class="btn-spinner"></span>';
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/track-shipment`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ tracking }),
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Could not sync status');
+    }
+
+    const awbInfo = result.data?.awbInfo || {};
+    const events = Array.isArray(result.data?.awbEvents) ? result.data.awbEvents : [];
+    const newStatus = mapShipGlobalStatus(awbInfo.awb_status);
+    const progress = calculateProgressFromStatus(newStatus, awbInfo.awb_status);
+
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({
+        status: newStatus,
+        progress,
+        shipglobal_status: awbInfo.awb_status || null,
+        shipglobal_status_code: awbInfo.awb_status_code || null,
+        shipglobal_events: events,
+        shipglobal_last_synced_at: new Date().toISOString(),
+        shipglobal_service: awbInfo.partner_name || awbInfo.carrier || null,
+        shipglobal_label: result.data?.label || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+    if (error) throw error;
+
+    showToast(`Order synced: ${newStatus}`, 'success');
+    await renderAdminOrders();
+  } catch (err) {
+    console.error('adminSyncOrder error:', err);
+    showToast(err.message || 'Sync failed', 'error');
+  } finally {
+    if (btnEl) {
+      btnEl.disabled = false;
+      btnEl.innerHTML = '🔄';
+    }
+  }
+}
+
+// ── Update order status manually ──
+async function adminUpdateStatus(orderId, newStatus) {
+  try {
+    const progress = newStatus === 'delivered' ? 100 : newStatus === 'shipped' ? 75 : newStatus === 'cancelled' ? 0 : 33;
+
+    const { error } = await supabaseClient
+      .from('orders')
+      .update({
+        status: newStatus,
+        progress,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', orderId);
+
+    if (error) throw error;
+
+    showToast(`Status updated to ${newStatus}`, 'success');
+    await renderAdminOrders();
+  } catch (err) {
+    console.error('adminUpdateStatus error:', err);
+    showToast(err.message || 'Update failed', 'error');
+    await renderAdminOrders(); // Revert UI
+  }
+}
+
+// ── Refresh all orders ──
+async function adminRefreshAll() {
+  const btn = document.getElementById('admin-refresh-btn');
+  const btnText = btn?.querySelector('.btn-text');
+  const btnSpinner = btn?.querySelector('.btn-spinner');
+
+  if (btn) {
+    btn.disabled = true;
+    btnText.style.display = 'none';
+    btnSpinner.style.display = 'inline-block';
+  }
+
+  try {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session?.access_token) throw new Error('Not authenticated');
+
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/sync-all-orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    });
+
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+      throw new Error(result.error || result.message || 'Sync failed');
+    }
+
+    showToast(`Synced ${result.synced} orders, ${result.failed} failed`, result.failed > 0 ? 'warning' : 'success');
+    await renderAdminOrders();
+  } catch (err) {
+    console.error('adminRefreshAll error:', err);
+    showToast(err.message || 'Refresh failed', 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btnText.style.display = 'inline';
+      btnSpinner.style.display = 'none';
+    }
+  }
+}
+
+// ── Export CSV ──
+async function adminExportCSV() {
+  try {
+    const { data } = await supabaseClient
+      .from('orders')
+      .select(`
+        id,
+        items,
+        total,
+        status,
+        shipping_country,
+        shipping_postcode,
+        shipping_service,
+        shipping_cost,
+        shipping_currency,
+        shipglobal_tracking,
+        shipglobal_service,
+        shipglobal_status,
+        shipglobal_last_synced_at,
+        created_at,
+        customers!inner (email, name, phone)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (!data || data.length === 0) {
+      showToast('No data to export', 'info');
+      return;
+    }
+
+    const headers = [
+      'Order ID', 'Customer Name', 'Customer Email', 'Customer Phone',
+      'Order Date', 'Items', 'Quantity', 'Total', 'Currency', 'Status',
+      'Shipping Country', 'Shipping Postcode', 'Shipping Service',
+      'ShipGlobal Tracking', 'ShipGlobal Status', 'Last Synced'
+    ];
+
+    const rows = data.map(order => {
+      const customer = order.customers || {};
+      const items = Array.isArray(order.items) ? order.items : [];
+      const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
+      const itemNames = items.map(it => escapeHtml(it.name)).join('; ');
+      const date = new Date(order.created_at).toLocaleString('en-IN');
+      const synced = order.shipglobal_last_synced_at
+        ? new Date(order.shipglobal_last_synced_at).toLocaleString('en-IN')
+        : '';
+
+      return [
+        order.id,
+        customer.name || '',
+        customer.email || '',
+        customer.phone || '',
+        date,
+        `"${itemNames}"`,
+        totalQty,
+        order.total,
+        order.shipping_currency || 'INR',
+        order.status,
+        order.shipping_country || '',
+        order.shipping_postcode || '',
+        order.shipping_service || '',
+        order.shipglobal_tracking || '',
+        order.shipglobal_status || '',
+        synced,
+      ];
+    });
+
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `rns-orders-${new Date().toISOString().slice(0,10)}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Orders exported to CSV', 'success');
+  } catch (err) {
+    console.error('adminExportCSV error:', err);
+    showToast(err.message || 'Export failed', 'error');
+  }
+}
+
+// ── Open order detail modal ──
+async function openOrderDetail(orderId) {
+  const overlay = document.getElementById('order-detail-overlay');
+  const content = document.getElementById('order-detail-content');
+  if (!overlay || !content) return;
+
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  content.innerHTML = '<div class="orders-loading"><div class="spinner"></div>Loading order details…</div>';
+
+  try {
+    const { data, error } = await supabaseClient
+      .from('orders')
+      .select(`
+        *,
+        customers!inner (email, name, phone)
+      `)
+      .eq('id', orderId)
+      .single();
+
+    if (error) throw error;
+
+    const customer = data.customers || {};
+    const items = Array.isArray(data.items) ? data.items : [];
+    const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
+    const date = new Date(data.created_at).toLocaleString('en-IN');
+    const updated = new Date(data.updated_at).toLocaleString('en-IN');
+    const synced = data.shipglobal_last_synced_at
+      ? new Date(data.shipglobal_last_synced_at).toLocaleString('en-IN')
+        : 'Never';
+
+    const itemsHtml = items.map(it => `
+      <tr>
+        <td style="padding: var(--sp-2); border-bottom: 1px solid var(--clr-border);">${escapeHtml(it.name)}</td>
+        <td style="padding: var(--sp-2); border-bottom: 1px solid var(--clr-border); text-align:center;">${it.qty}</td>
+        <td style="padding: var(--sp-2); border-bottom: 1px solid var(--clr-border); text-align:right;">₹${(Number(it.price) * Number(it.qty)).toLocaleString('en-IN')}</td>
+      </tr>
+    `).join('');
+
+    content.innerHTML = `
+      <div style="padding: var(--sp-6);">
+        <h2 style="font-family: var(--font-display); margin-bottom: var(--sp-4);">Order #${data.id.slice(0, 8).toUpperCase()}</h2>
+        
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); margin-bottom: var(--sp-6);">
+          <div>
+            <h4 style="color: var(--clr-gold); font-size: var(--fs-xs); text-transform: uppercase;">Customer</h4>
+            <p><strong>Name:</strong> ${escapeHtml(customer.name || '—')}</p>
+            <p><strong>Email:</strong> ${escapeHtml(customer.email || '—')}</p>
+            <p><strong>Phone:</strong> ${escapeHtml(customer.phone || '—')}</p>
+          </div>
+          <div>
+            <h4 style="color: var(--clr-gold); font-size: var(--fs-xs); text-transform: uppercase;">Order Info</h4>
+            <p><strong>Order Date:</strong> ${escapeHtml(date)}</p>
+            <p><strong>Last Updated:</strong> ${escapeHtml(updated)}</p>
+            <p><strong>Status:</strong> <span class="order-status-badge order-status-${data.status}">${data.status}</span></p>
+            <p><strong>Progress:</strong> ${Number(data.progress) || 0}%</p>
+          </div>
+        </div>
+
+        <h4 style="color: var(--clr-gold); font-size: var(--fs-xs); text-transform: uppercase; margin-bottom: var(--sp-2);">Shipping Address</h4>
+        <div style="background: var(--clr-bg-secondary); padding: var(--sp-4); border-radius: var(--radius-md); margin-bottom: var(--sp-6);">
+          <p><strong>Country:</strong> ${escapeHtml(data.shipping_country || '—')}</p>
+          <p><strong>Postcode:</strong> ${escapeHtml(data.shipping_postcode || '—')}</p>
+          <p><strong>Service:</strong> ${escapeHtml(data.shipping_service || '—')}</p>
+        </div>
+
+        <h4 style="color: var(--clr-gold); font-size: var(--fs-xs); text-transform: uppercase; margin-bottom: var(--sp-2);">Items (${totalQty} total)</h4>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: var(--sp-6);">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--clr-border);">
+              <th style="text-align:left; padding: var(--sp-2); color: var(--clr-text-muted); font-size: var(--fs-xs);">Item</th>
+              <th style="text-align:center; padding: var(--sp-2); color: var(--clr-text-muted); font-size: var(--fs-xs);">Qty</th>
+              <th style="text-align:right; padding: var(--sp-2); color: var(--clr-text-muted); font-size: var(--fs-xs);">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsHtml}
+            <tr style="border-top: 2px solid var(--clr-border);">
+              <td style="padding: var(--sp-2);"><strong>Total</strong></td>
+              <td style="padding: var(--sp-2); text-align:center;"><strong>${totalQty}</strong></td>
+              <td style="padding: var(--sp-2); text-align:right;"><strong>₹${Number(data.total).toLocaleString('en-IN')}</strong></td>
+            </tr>
+          </tbody>
+        </table>
+
+        ${data.shipglobal_tracking ? `
+        <h4 style="color: var(--clr-gold); font-size: var(--fs-xs); text-transform: uppercase; margin-bottom: var(--sp-2);">ShipGlobal Tracking</h4>
+        <div style="background: var(--clr-bg-secondary); padding: var(--sp-4); border-radius: var(--radius-md); margin-bottom: var(--sp-6);">
+          <p><strong>Tracking:</strong> <span style="font-family: monospace;">${escapeHtml(data.shipglobal_tracking)}</span></p>
+          <p><strong>Carrier:</strong> ${escapeHtml(data.shipglobal_service || data.shipping_service || '—')}</p>
+          <p><strong>Status:</strong> ${escapeHtml(data.shipglobal_status || '—')}</p>
+          <p><strong>Last Synced:</strong> ${escapeHtml(synced)}</p>
+        </div>
+        ` : '<p style="color: var(--clr-text-muted); margin-bottom: var(--sp-6);">No tracking information available.</p>'}
+
+        <div style="display:flex; gap: var(--sp-2);">
+          <button class="btn btn-secondary" onclick="closeOrderDetail()">Close</button>
+          ${data.shipglobal_tracking ? `<button class="btn btn-primary" onclick="adminSyncOrder('${escapeHtml(data.id)}', '${escapeHtml(data.shipglobal_tracking)}', null)">🔄 Sync Status</button>` : ''}
+        </div>
+      </div>
+    `;
+  } catch (err) {
+    console.error('openOrderDetail error:', err);
+    content.innerHTML = `<div style="padding: var(--sp-6); color: var(--clr-error);">Error: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+// ── Close order detail modal ──
+function closeOrderDetail() {
+  const overlay = document.getElementById('order-detail-overlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    if (!document.getElementById('auth-overlay')?.classList.contains('open')) {
+      document.body.style.overflow = '';
+    }
+  }
+}
+
+// ── Export CSV helper ──
+function escapeCsv(val) {
+  if (val == null) return '';
+  const s = String(val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+// ── Listen for filter changes on admin page ──
+function initAdminFilters() {
+  const searchEl = document.getElementById('admin-search');
+  const statusEl = document.getElementById('admin-status-filter');
+  const dateEl = document.getElementById('admin-date-filter');
+
+  if (searchEl) searchEl.addEventListener('input', () => {
+    adminCurrentPage = 1;
+    applyAdminFilters();
+  });
+  if (statusEl) statusEl.addEventListener('change', () => {
+    adminCurrentPage = 1;
+    applyAdminFilters();
+  });
+  if (dateEl) dateEl.addEventListener('change', () => {
+    adminCurrentPage = 1;
+    applyAdminFilters();
+  });
+}

@@ -10,6 +10,7 @@ create table if not exists public.customers (
   email       text not null,
   name        text not null check (char_length(name) between 2 and 100),
   phone       text,
+  is_admin    boolean not null default false,
   created_at  timestamptz not null default now(),
   updated_at  timestamptz not null default now()
 );
@@ -21,6 +22,10 @@ alter table public.customers
   drop constraint if exists customers_phone_check;
 
 create index if not exists customers_email_idx on public.customers (lower(email));
+
+-- Idempotent migration: add is_admin column to existing customers tables.
+alter table public.customers
+  add column if not exists is_admin boolean not null default false;
 
 -- 2. ORDERS TABLE
 -- Stores orders linked to customers. items is jsonb so cart snapshots
@@ -166,11 +171,17 @@ create policy "customers_update_own"
   with check (auth.uid() = id);
 
 -- ORDERS policies: a user can only see/insert their OWN orders.
--- No update/delete from client (use a backend or admin SQL for status changes).
+-- Admins can see/update all orders.
 drop policy if exists "orders_select_own" on public.orders;
 create policy "orders_select_own"
   on public.orders for select
-  using (auth.uid() = customer_id);
+  using (
+    auth.uid() = customer_id
+    or EXISTS (
+      SELECT 1 FROM public.customers
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  );
 
 drop policy if exists "orders_insert_own" on public.orders;
 create policy "orders_insert_own"
@@ -179,6 +190,23 @@ create policy "orders_insert_own"
     auth.uid() = customer_id
     and jsonb_array_length(items) > 0
     and total >= 0
+  );
+
+-- Admins can update order status (e.g. shipped, delivered, cancelled)
+drop policy if exists "orders_update_admin" on public.orders;
+create policy "orders_update_admin"
+  on public.orders for update
+  using (
+    EXISTS (
+      SELECT 1 FROM public.customers
+      WHERE id = auth.uid() AND is_admin = true
+    )
+  )
+  with check (
+    EXISTS (
+      SELECT 1 FROM public.customers
+      WHERE id = auth.uid() AND is_admin = true
+    )
   );
 
 -- SHIPPING QUOTES: users can only see their own quotes; inserts are
