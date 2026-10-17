@@ -153,7 +153,7 @@ async function loadCurrentUser(userId) {
 
     const { data, error } = await supabaseClient
       .from('customers')
-      .select('id, name, email, phone')
+      .select('id, name, email, phone, is_admin')
       .eq('id', userId)
       .maybeSingle();
 
@@ -165,13 +165,19 @@ async function loadCurrentUser(userId) {
       updateAuthUI();
       await renderOrders();
     } else {
-      // Auth user exists but profile row missing — happens on first OTP login
-      const { data: { user } } = await supabaseClient.auth.getUser();
-      const meta = user?.user_metadata || {};
+      // Auth user exists but profile row missing — happens on first OTP login.
+      // Create the customer profile from Supabase Auth metadata.
+      const { data: authUser, error: authErr } = await supabaseClient.auth.getUser();
+      if (authErr || !authUser?.user) {
+        throw new Error('Could not verify Supabase Auth session');
+      }
+
+      const meta = authUser.user.user_metadata || {};
       const customerRow = {
         id: userId,
-        email: user.email,
-        name: sanitizeText(meta.name || user.email.split('@')[0], 100),
+        email: authUser.user.email,
+        name: sanitizeText(meta.name || authUser.user.email.split('@')[0], 100),
+        is_admin: false,
       };
       const phoneVal = sanitizeText(meta.phone, 15);
       if (phoneVal) customerRow.phone = phoneVal;
@@ -179,12 +185,45 @@ async function loadCurrentUser(userId) {
       const { error: insertErr } = await supabaseClient
         .from('customers')
         .insert(customerRow);
-      if (insertErr && insertErr.code !== '23505') throw insertErr;
-      await loadCurrentUser(userId);
+
+      if (insertErr) {
+        if (insertErr.code === '23505') {
+          // Race condition: row was created by another call — re-query
+          const { data: retryData, error: retryErr } = await supabaseClient
+            .from('customers')
+            .select('id, name, email, phone, is_admin')
+            .eq('id', userId)
+            .maybeSingle();
+          if (retryErr) throw retryErr;
+          if (retryData) {
+            currentUser = retryData;
+            isLoggedIn = true;
+            updateAuthUI();
+            await renderOrders();
+            return;
+          }
+          throw new Error('Profile row not found after insert');
+        }
+        throw insertErr;
+      }
+
+      // Re-query to get the inserted row with any server defaults
+      const { data: newData, error: newErr } = await supabaseClient
+        .from('customers')
+        .select('id, name, email, phone, is_admin')
+        .eq('id', userId)
+        .maybeSingle();
+      if (newErr) throw newErr;
+      if (!newData) throw new Error('Profile row not found after insert');
+
+      currentUser = newData;
+      isLoggedIn = true;
+      updateAuthUI();
+      await renderOrders();
     }
   } catch (err) {
     console.error('loadCurrentUser error:', err);
-    showToast('Failed to load profile. Please try again.', 'error');
+    showToast('Failed to load profile: ' + err.message, 'error');
   } finally {
     loadingUser = false;
   }
