@@ -967,11 +967,13 @@ function openAuth() {
   switchAuthTab('login', document.querySelector('.auth-tab[data-tab="login"]'));
 }
 
-function closeAuth() {
-  // Do not auto-close if OTP form is active — keep it open until OTP is entered
-  const otpForm = document.getElementById('otp-form');
-  if (otpForm && otpForm.classList.contains('active')) {
-    return;
+function closeAuth(force = false) {
+  // Do not auto-close if OTP form is active, unless forced (X button or OTP success)
+  if (!force) {
+    const otpForm = document.getElementById('otp-form');
+    if (otpForm && otpForm.classList.contains('active')) {
+      return;
+    }
   }
   clearAuthAlert();
   document.getElementById('auth-overlay').classList.remove('open');
@@ -1134,7 +1136,7 @@ async function handleOtpVerify(e) {
     if (result.error) throw result.error;
     const { data } = result;
 
-    closeAuth();
+    closeAuth(true);
     showToast('Signed in successfully!', 'success');
     handlePostAuthRedirect();
     // loadCurrentUser is triggered automatically by onAuthStateChange listener
