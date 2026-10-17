@@ -1139,7 +1139,10 @@ async function handleOtpVerify(e) {
     closeAuth(true);
     showToast('Signed in successfully!', 'success');
     handlePostAuthRedirect();
-    // loadCurrentUser is triggered automatically by onAuthStateChange listener
+    // Explicitly load profile after OTP verification
+    if (data?.user) {
+      await loadCurrentUser(data.user.id);
+    }
   } catch (err) {
     console.error('OTP verify failed:', err);
     const userMsg = err.message || 'Invalid or expired code. Please try again.';
