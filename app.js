@@ -968,6 +968,11 @@ function openAuth() {
 }
 
 function closeAuth() {
+  // Do not auto-close if OTP form is active — keep it open until OTP is entered
+  const otpForm = document.getElementById('otp-form');
+  if (otpForm && otpForm.classList.contains('active')) {
+    return;
+  }
   clearAuthAlert();
   document.getElementById('auth-overlay').classList.remove('open');
   document.body.style.overflow = '';
@@ -1914,6 +1919,10 @@ function toggleMobileMenu() {
 // ── Close modals on Escape ──
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
+    const otpForm = document.getElementById('otp-form');
+    if (otpForm && otpForm.classList.contains('active')) {
+      return; // Do not close OTP form on Escape
+    }
     closeCart();
     closeAuth();
     closeTracking();
@@ -1923,7 +1932,14 @@ document.addEventListener('keydown', (e) => {
 
 // ── Close auth overlay on click outside ──
 document.getElementById('auth-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeAuth();
+  if (e.target === e.currentTarget) {
+    // Do not close if OTP form is active
+    const otpForm = document.getElementById('otp-form');
+    if (otpForm && otpForm.classList.contains('active')) {
+      return;
+    }
+    closeAuth();
+  }
 });
 
 // ── Close tracking overlay on click outside ──
@@ -2604,3 +2620,16 @@ function initAdminFilters() {
     applyAdminFilters();
   });
 }
+
+// ── Keep OTP modal open when switching browser tabs ──
+document.addEventListener('visibilitychange', () => {
+  const otpForm = document.getElementById('otp-form');
+  if (otpForm && otpForm.classList.contains('active')) {
+    // Ensure modal stays open when tab becomes visible again
+    const overlay = document.getElementById('auth-overlay');
+    if (overlay && !overlay.classList.contains('open')) {
+      overlay.classList.add('open');
+    }
+    document.body.style.overflow = 'hidden';
+  }
+});
