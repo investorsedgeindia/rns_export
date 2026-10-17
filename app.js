@@ -138,8 +138,19 @@ function initAuthListener() {
   });
 }
 
+let loadingUser = false; // Guard against concurrent loadCurrentUser calls
+
 async function loadCurrentUser(userId) {
+  // Prevent concurrent calls
+  if (loadingUser) return;
+  loadingUser = true;
+
   try {
+    // Skip if already loaded for this user
+    if (currentUser && currentUser.id === userId && isLoggedIn) {
+      return;
+    }
+
     const { data, error } = await supabaseClient
       .from('customers')
       .select('id, name, email, phone')
@@ -155,7 +166,6 @@ async function loadCurrentUser(userId) {
       await renderOrders();
     } else {
       // Auth user exists but profile row missing — happens on first OTP login
-      // (existing user from before phone was collected). Try to populate from metadata.
       const { data: { user } } = await supabaseClient.auth.getUser();
       const meta = user?.user_metadata || {};
       const customerRow = {
@@ -163,9 +173,6 @@ async function loadCurrentUser(userId) {
         email: user.email,
         name: sanitizeText(meta.name || user.email.split('@')[0], 100),
       };
-      // Only include phone if it's a real, non-empty value — omitting it lets
-      // the DB column default / NULL constraint apply, avoiding a CHECK
-      // violation (e.g. customers_phone_check) when no phone is provided.
       const phoneVal = sanitizeText(meta.phone, 15);
       if (phoneVal) customerRow.phone = phoneVal;
 
@@ -178,6 +185,8 @@ async function loadCurrentUser(userId) {
   } catch (err) {
     console.error('loadCurrentUser error:', err);
     showToast('Failed to load profile. Please try again.', 'error');
+  } finally {
+    loadingUser = false;
   }
 }
 
