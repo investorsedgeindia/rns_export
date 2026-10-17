@@ -836,6 +836,9 @@ async function handleCheckout() {
       .from('orders')
       .insert({
         customer_id: currentUser.id,
+        customer_name: `${firstName} ${lastName}`.trim() || currentUser.name || currentUser.email,
+        customer_email: currentUser.email,
+        customer_phone: phone || currentUser.phone || null,
         items: orderItems,
         total: total,
         shipping_country: shippingCountry || null,
@@ -2051,12 +2054,17 @@ async function renderAdminOrders() {
   `;
 
   try {
-    // Fetch ALL orders with customer info (admin bypasses RLS via service_role or admin policy)
+    // Fetch ALL orders (admin RLS policy allows selecting all orders)
+    // NOTE: customers!inner removed — RLS on customers table blocks join
+    // Customer name/email are stored directly in orders table at checkout time
     const { data, error } = await supabaseClient
       .from('orders')
       .select(`
         id,
         customer_id,
+        customer_name,
+        customer_email,
+        customer_phone,
         items,
         total,
         status,
@@ -2074,12 +2082,7 @@ async function renderAdminOrders() {
         shipglobal_last_synced_at,
         shipglobal_created,
         shipglobal_cancelled,
-        created_at,
-        customers!inner (
-          email,
-          name,
-          phone
-        )
+        created_at
       `)
       .order('created_at', { ascending: false });
 
@@ -2121,8 +2124,8 @@ function applyAdminFilters() {
     if (searchTerm) {
       const searchable = [
         order.id,
-        order.customers?.email || '',
-        order.customers?.name || '',
+        order.customer_email || '',
+        order.customer_name || '',
         order.shipglobal_tracking || '',
         order.shipping_country || '',
       ].join(' ').toLowerCase();
@@ -2200,7 +2203,11 @@ function renderAdminTable() {
   }
 
   body.innerHTML = pageOrders.map(order => {
-    const customer = order.customers || {};
+    const customer = {
+      name: order.customer_name || 'Unknown',
+      email: order.customer_email || '',
+      phone: order.customer_phone || '',
+    };
     const date = new Date(order.created_at);
     const dateStr = date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     const shortId = order.id.slice(0, 8).toUpperCase();
@@ -2463,7 +2470,9 @@ async function adminExportCSV() {
         shipglobal_status,
         shipglobal_last_synced_at,
         created_at,
-        customers!inner (email, name, phone)
+        customer_name,
+        customer_email,
+        customer_phone
       `)
       .order('created_at', { ascending: false });
 
@@ -2480,7 +2489,11 @@ async function adminExportCSV() {
     ];
 
     const rows = data.map(order => {
-      const customer = order.customers || {};
+      const customer = {
+        name: order.customer_name || 'Unknown',
+        email: order.customer_email || '',
+        phone: order.customer_phone || '',
+      };
       const items = Array.isArray(order.items) ? order.items : [];
       const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
       const itemNames = items.map(it => escapeHtml(it.name)).join('; ');
@@ -2541,14 +2554,20 @@ async function openOrderDetail(orderId) {
       .from('orders')
       .select(`
         *,
-        customers!inner (email, name, phone)
+        customer_name,
+        customer_email,
+        customer_phone
       `)
       .eq('id', orderId)
       .single();
 
     if (error) throw error;
 
-    const customer = data.customers || {};
+    const customer = {
+      name: data.customer_name || 'Unknown',
+      email: data.customer_email || '',
+      phone: data.customer_phone || '',
+    };
     const items = Array.isArray(data.items) ? data.items : [];
     const totalQty = items.reduce((sum, it) => sum + Number(it.qty || 0), 0);
     const date = new Date(data.created_at).toLocaleString('en-IN');

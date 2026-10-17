@@ -33,6 +33,9 @@ alter table public.customers
 create table if not exists public.orders (
   id           uuid primary key default gen_random_uuid(),
   customer_id  uuid not null references public.customers(id) on delete cascade,
+  customer_name text,
+  customer_email text,
+  customer_phone text,
   items        jsonb not null check (jsonb_typeof(items) = 'array'),
   subtotal     numeric(10,2) not null check (subtotal >= 0),
   total        numeric(10,2) not null check (total >= 0),
@@ -76,7 +79,10 @@ alter table public.orders
   add column if not exists shipglobal_events jsonb default '[]'::jsonb,
   add column if not exists shipglobal_label text,
   add column if not exists shipglobal_last_synced_at timestamptz,
-  add column if not exists shipglobal_created boolean not null default false;
+  add column if not exists shipglobal_created boolean not null default false,
+  add column if not exists customer_name text,
+  add column if not exists customer_email text,
+  add column if not exists customer_phone text;
 
 create index if not exists orders_customer_idx
   on public.orders (customer_id, created_at desc);
