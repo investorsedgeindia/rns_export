@@ -1,9 +1,0 @@
-{
-  "name": "rns-export",
-  "version": "1.0.0",
-  "description": "RNS Export — Bandhuprem Foods admin panel",
-  "private": true,
-  "dependencies": {
-    "@supabase/ssr": "^0.4.0"
-  }
-}

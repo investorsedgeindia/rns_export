@@ -220,35 +220,39 @@
       await restoreSession();
       updateAuthUI();
       
-      const ADMIN_EMAIL = 'bandhupremagency@gmail.com';
-
-      if (isLoggedIn && currentUser && currentUser.email === ADMIN_EMAIL) {
-        adminCurrentPage = 1;
-        adminTotalPages = 1;
-        initAdminFilters();
-        await renderAdminOrders();
-      } else {
-        const adminSection = document.getElementById('admin-page');
-        if (adminSection) adminSection.style.display = 'none';
-
-        const deny = document.createElement('div');
-        deny.className = 'container';
-        deny.style.paddingTop = 'var(--sp-8)';
-        deny.style.textAlign = 'center';
-        deny.innerHTML = `
-          <div style="font-size: 2rem; margin-bottom: var(--sp-4);">🚫</div>
-          <h1 style="color: var(--clr-danger, #c0392b); margin-bottom: var(--sp-2);">Access Denied</h1>
-          <p style="color: var(--clr-text-secondary);">The admin panel is restricted to the admin account.</p>
-          ${isLoggedIn && currentUser
-            ? '<p style="color: var(--clr-text-muted); margin-top: var(--sp-2);">Signed in as ' + escapeHtml(currentUser.email) + ' — not authorized.</p>'
-            : '<p style="color: var(--clr-text-muted); margin-top: var(--sp-2);">Please sign in as the admin to access this page.</p>'}
-          <button class="btn btn-primary" onclick="window.location.href=\'index.html\'" style="margin-top: var(--sp-4);">← Back to Shop</button>
-          ${!isLoggedIn ? '<button class="btn btn-secondary" onclick="openAuth()" style="margin-top: var(--sp-2); margin-left: var(--sp-2);">🔐 Sign In</button>' : ''}
-        `;
-        const mainContainer = document.querySelector('.main-content .container');
-        if (mainContainer) {
-          mainContainer.insertBefore(deny, mainContainer.firstChild);
+      // Check admin access
+      if (isLoggedIn && currentUser) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('customers')
+            .select('is_admin, name, email')
+            .eq('id', currentUser.id)
+            .single();
+          
+          if (error) {
+            console.error('Admin check error:', error);
+            showToast('Database not migrated. Please run supabase_schema.sql in Supabase SQL Editor first.', 'error');
+            return;
+          }
+          
+          if (!data?.is_admin) {
+            showToast('Admin access required. Please set is_admin = true for your account in Supabase.', 'error');
+            setTimeout(() => window.location.href = 'index.html', 2000);
+            return;
+          }
+          
+          adminCurrentPage = 1;
+          adminTotalPages = 1;
+          initAdminFilters();
+          await renderAdminOrders();
+        } catch (err) {
+          console.error('Admin initialization error:', err);
+          showToast('Admin setup error: ' + escapeHtml(err.message), 'error');
         }
+      } else {
+        // Redirect to login with return to admin
+        authRedirectTarget = 'admin';
+        openAuth();
       }
     });
   </script>
