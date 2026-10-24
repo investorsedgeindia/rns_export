@@ -5,9 +5,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bandhuprem Foods — Premium Cashews | Handpicked Luxury Dry Fruits</title>
-  <meta name="description"
-    content="Discover Bandhuprem Foods' handpicked premium cashew nuts. Farm-fresh, expertly roasted, and delivered to your doorstep. Experience the finest quality dry fruits." />
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="description" content="Discover Bandhuprem Foods' premium cashew nuts. Farm-fresh and delivered to your doorstep. Experience the finest quality cashew nuts
+  <link rel=" stylesheet" href="styles.css" />
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥜</text></svg>" />
 </head>
@@ -24,7 +23,8 @@
 
       <ul class="nav-links" id="nav-links">
         <li><a href="index.html" class="nav-link active" data-nav="home">Home</a></li>
-        <li><a href="#" class="nav-link" data-nav="orders" id="nav-orders" onclick="navigateToOrders()">My Orders</a></li>
+        <li><a href="#" class="nav-link" data-nav="orders" id="nav-orders" onclick="navigateToOrders()">My Orders</a>
+        </li>
       </ul>
 
       <div class="nav-actions">
@@ -32,7 +32,8 @@
           🔍
         </button>
         <div class="account-dropdown" id="account-dropdown">
-          <button class="nav-action-btn account-btn-trigger" id="account-btn" aria-label="Account" aria-expanded="false" aria-haspopup="true">
+          <button class="nav-action-btn account-btn-trigger" id="account-btn" aria-label="Account" aria-expanded="false"
+            aria-haspopup="true">
             👤
           </button>
           <div class="account-dropdown-menu" id="account-dropdown-menu" role="menu" style="display: none;">
@@ -44,13 +45,16 @@
               </div>
             </div>
             <div class="account-dropdown-divider" id="account-divider" style="display: none;"></div>
-            <a href="#" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;" onclick="closeAccountDropdown(); navigateToOrders();">
+            <a href="#" class="account-dropdown-item" id="account-orders-link" role="menuitem" style="display: none;"
+              onclick="closeAccountDropdown(); navigateToOrders();">
               📦 My Orders
             </a>
-            <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;" onclick="handleSignOut()">
+            <button class="account-dropdown-item" id="account-signout-btn" role="menuitem" style="display: none;"
+              onclick="handleSignOut()">
               🚪 Sign Out
             </button>
-            <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem" onclick="closeAccountDropdown(); openAuth();">
+            <a href="#" class="account-dropdown-item" id="account-signin-link" role="menuitem"
+              onclick="closeAccountDropdown(); openAuth();">
               🔐 Sign In / Register
             </a>
           </div>
@@ -132,7 +136,7 @@
         <div class="footer-brand">
           <a href="#" class="nav-brand">
             <div class="nav-brand-icon">🥜</div>
-<div class="nav-brand-text">Bandhuprem Foods</div>
+            <div class="nav-brand-text">Bandhuprem Foods</div>
           </a>
           <p class="footer-brand-desc">
             Premium cashews and almonds, handpicked from the finest orchards.
@@ -168,8 +172,8 @@
         <div>
           <h4 class="footer-col-title">Contact</h4>
           <ul class="footer-links">
-            <li><a href="mailto:hello@rnsdryfruits.com">hello@rnsdryfruits.com</a></li>
-            <li><a href="tel:+919876543210">+91 98765 43210</a></li>
+            <li><a href="mailto:bandhupremagency@gmail.com">bandhupremagency@gmail.com</a></li>
+            <li><a href="tel:+919518358781">+91 9518358781</a></li>
             <li><a href="#">Mumbai, India</a></li>
           </ul>
         </div>
@@ -291,41 +295,63 @@
       <div class="shipping-options" id="shipping-options" style="display:none;"></div>
 
       <!-- ── Delivery Address Form ── -->
-      <div class="shipping-address-form" id="shipping-address-form" style="display:none; margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
-        <h5 style="font-family: var(--font-display); font-size: var(--fs-sm); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">
+      <div class="shipping-address-form" id="shipping-address-form"
+        style="display:none; margin-top: var(--sp-4); padding-top: var(--sp-4); border-top: 1px solid var(--clr-border);">
+        <h5
+          style="font-family: var(--font-display); font-size: var(--fs-sm); margin-bottom: var(--sp-3); color: var(--clr-text-primary);">
           📍 Delivery Address
         </h5>
         <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
           <div class="form-group" style="flex:1;">
-            <label for="shipping-first-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">First Name *</label>
-            <input type="text" id="shipping-first-name" placeholder="First Name" maxlength="100" required style="width:100%;" />
+            <label for="shipping-first-name"
+              style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">First
+              Name *</label>
+            <input type="text" id="shipping-first-name" placeholder="First Name" maxlength="100" required
+              style="width:100%;" />
           </div>
           <div class="form-group" style="flex:1;">
-            <label for="shipping-last-name" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Last Name *</label>
-            <input type="text" id="shipping-last-name" placeholder="Last Name" maxlength="100" required style="width:100%;" />
+            <label for="shipping-last-name"
+              style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Last
+              Name *</label>
+            <input type="text" id="shipping-last-name" placeholder="Last Name" maxlength="100" required
+              style="width:100%;" />
           </div>
         </div>
         <div class="form-group" style="margin-bottom: var(--sp-2);">
-          <label for="shipping-address" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Street Address *</label>
-          <input type="text" id="shipping-address" placeholder="House/Flat number, Street name" maxlength="200" required style="width:100%;" />
+          <label for="shipping-address"
+            style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Street
+            Address *</label>
+          <input type="text" id="shipping-address" placeholder="House/Flat number, Street name" maxlength="200" required
+            style="width:100%;" />
         </div>
         <div class="form-group" style="margin-bottom: var(--sp-2);">
-          <label for="shipping-address2" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Apartment, Suite, Unit (optional)</label>
-          <input type="text" id="shipping-address2" placeholder="Apartment, unit, landmark, etc." maxlength="200" style="width:100%;" />
+          <label for="shipping-address2"
+            style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Apartment,
+            Suite, Unit (optional)</label>
+          <input type="text" id="shipping-address2" placeholder="Apartment, unit, landmark, etc." maxlength="200"
+            style="width:100%;" />
         </div>
         <div class="form-row" style="display:flex; gap: var(--sp-2); margin-bottom: var(--sp-2);">
           <div class="form-group" style="flex:1;">
-            <label for="shipping-city" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">City *</label>
-            <input type="text" id="shipping-city" placeholder="e.g. San Jose" maxlength="100" required style="width:100%;" />
+            <label for="shipping-city"
+              style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">City
+              *</label>
+            <input type="text" id="shipping-city" placeholder="e.g. San Jose" maxlength="100" required
+              style="width:100%;" />
           </div>
           <div class="form-group" style="flex:1;">
-            <label for="shipping-state" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">State / Province *</label>
+            <label for="shipping-state"
+              style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">State
+              / Province *</label>
             <input type="text" id="shipping-state" placeholder="e.g. CA" maxlength="100" required style="width:100%;" />
           </div>
         </div>
         <div class="form-group" style="margin-bottom: var(--sp-2);">
-          <label for="shipping-phone" style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Recipient Phone Number *</label>
-          <input type="tel" id="shipping-phone" placeholder="e.g. +1 555 123 4567" maxlength="30" required style="width:100%;" />
+          <label for="shipping-phone"
+            style="font-size: var(--fs-xs); color: var(--clr-text-secondary); display:block; margin-bottom: 4px;">Recipient
+            Phone Number *</label>
+          <input type="tel" id="shipping-phone" placeholder="e.g. +1 555 123 4567" maxlength="30" required
+            style="width:100%;" />
         </div>
       </div>
     </div>
@@ -367,7 +393,7 @@
   <div class="auth-overlay" id="auth-overlay">
     <div class="auth-modal" style="position:relative;">
       <button class="auth-close" onclick="closeAuth(true)">✕</button>
-<div class="auth-modal-header">
+      <div class="auth-modal-header">
         <a href="#" class="nav-brand">
           <div class="nav-brand-icon">🥜</div>
           <div class="nav-brand-text">Bandhuprem Foods</div>
@@ -391,7 +417,7 @@
           </p>
 
 
-</form>
+        </form>
 
         <!-- OTP VERIFICATION FORM -->
         <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
@@ -420,10 +446,11 @@
   </div>
 
   <!-- ═══════ TOAST CONTAINER ═══════ -->
-<div class="toast-container" id="toast-container"></div>
+  <div class="toast-container" id="toast-container"></div>
 
   <!-- Supabase JS SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
+
 </html>
