@@ -1214,20 +1214,6 @@ async function resendOtp(e) {
   await requestOtp(email);
 }
 
-// ── OAuth (Google) ──
-async function handleOAuth(provider) {
-  try {
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: window.location.origin },
-    });
-    if (error) throw error;
-  } catch (err) {
-    console.error('OAuth failed:', err);
-    showToast(err.message || 'OAuth sign-in failed.', 'error');
-  }
-}
-
 // ── Auth UI sync ──
 function updateAuthUI() {
   const accountBtn = document.getElementById('account-btn');
