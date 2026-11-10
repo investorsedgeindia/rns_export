@@ -177,8 +177,6 @@
           <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" placeholder="Enter your email" required autocomplete="email" maxlength="254" /></div>
           <button type="submit" class="btn btn-primary btn-lg">Send OTP to Email</button>
           <p style="font-size: var(--fs-xs); color: var(--clr-text-secondary); margin-top: var(--sp-3); text-align:center;">We'll email you a one-time login code. No password needed.</p>
-          <div class="auth-divider">or continue with</div>
-          <div class="social-login-btns"><button type="button" class="social-login-btn" onclick="handleOAuth('google')">G Google</button><button type="button" class="social-login-btn" disabled title="Coming soon">f Facebook</button></div>
         </form>
         <form class="auth-form" id="otp-form" onsubmit="handleOtpVerify(event)">
           <p style="color: var(--clr-text-secondary); margin-bottom: var(--sp-2); text-align:center;">Enter the 6-digit code sent to<br /><strong id="otp-email-display"></strong></p>
