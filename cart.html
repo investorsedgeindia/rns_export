@@ -159,8 +159,14 @@
               <p class="shipping-note" id="shipping-note" style="display: none; margin-top: var(--sp-2); font-size: var(--fs-xs); color: var(--clr-text-secondary);"></p>
             </div>
 
-            <!-- Shipping Options (Provider quotes) -->
-            <div class="shipping-options" id="shipping-options" style="display: none; margin-top: var(--sp-4);"></div>
+            <!-- Shipping Options (Auto-selected: ShipGlobal Direct) -->
+            <div class="shipping-options" id="shipping-options" style="display: none; margin-top: var(--sp-4);">
+              <div class="shipping-service-selected">
+                <div class="shipping-service-title">Shipping Service</div>
+                <div class="shipping-service-name" id="shipping-service-name">--</div>
+                <div class="shipping-service-price" id="shipping-service-price">--</div>
+              </div>
+            </div>
           </div>
 
           <!-- Delivery Address Form (shown after quote) -->

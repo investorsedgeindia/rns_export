@@ -1740,6 +1740,37 @@ input, select, textarea {
   font-weight: 600;
 }
 
+/* Auto-selected shipping service display (no user choice) */
+.shipping-service-selected {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-4);
+  background: var(--clr-bg-secondary);
+  border: 1px solid var(--clr-border);
+  border-radius: var(--radius-md);
+}
+
+.shipping-service-title {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--clr-gold);
+}
+
+.shipping-service-name {
+  font-weight: 600;
+  font-size: var(--fs-base);
+  color: var(--clr-text-primary);
+}
+
+.shipping-service-price {
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  color: var(--clr-gold);
+}
+
 /* Shipping address form */
 .shipping-address-form {
   margin-top: var(--sp-2);

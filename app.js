@@ -688,36 +688,18 @@ function renderShippingOptions(quote) {
     return;
   }
 
-  optionsEl.innerHTML = services.map((service, index) => `
-    <label class="shipping-option ${index === 0 ? 'selected' : ''}">
-      <input type="radio" name="shipping-service" value="${index}" ${index === 0 ? 'checked' : ''} />
-      <div class="shipping-option-info">
-        <div class="shipping-option-title">${escapeHtml(service.title)}</div>
-        <div class="shipping-option-meta">
-          ${escapeHtml(service.transit_time || 'Transit time not specified')}
-          ${service.notes ? `<br />${escapeHtml(service.notes)}` : ''}
-        </div>
-      </div>
-      <div class="shipping-option-price">
-        <strong>${quote.currency || 'INR'} ${Number(service.subtotal_fee || service.price?.logistic_fee || 0).toLocaleString('en-IN')}</strong>
-        <span>DDP</span>
-      </div>
-    </label>
-  `).join('');
-
-  optionsEl.querySelectorAll('input[type="radio"]').forEach(radio => {
-    radio.addEventListener('change', () => {
-      const index = Number(radio.value);
-      selectedShippingService = services[index];
-      optionsEl.querySelectorAll('.shipping-option').forEach(opt => opt.classList.remove('selected'));
-      radio.closest('.shipping-option').classList.add('selected');
-      updateCartUI();
-    });
-  });
-
-  // Default to first service
+  // Always auto-select the first service (ShipGlobal Direct) — no user choice
   selectedShippingService = services[0];
-  optionsEl.style.display = 'flex';
+
+  const serviceNameEl = document.getElementById('shipping-service-name');
+  const servicePriceEl = document.getElementById('shipping-service-price');
+  if (serviceNameEl) serviceNameEl.textContent = escapeHtml(selectedShippingService.title);
+  if (servicePriceEl) {
+    const fee = Number(selectedShippingService.subtotal_fee || selectedShippingService.price?.logistic_fee || 0);
+    servicePriceEl.textContent = `${quote.currency || 'INR'} ${fee.toLocaleString('en-IN')} (DDP)`;
+  }
+
+  optionsEl.style.display = 'block';
 
   const addressForm = document.getElementById('shipping-address-form');
   if (addressForm) {
