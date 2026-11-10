@@ -242,13 +242,13 @@ input, select, textarea {
 }
 
 .nav-link {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-base);
   font-weight: 500;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--clr-text-secondary);
   position: relative;
-  padding: var(--sp-2) 0;
+  padding: var(--sp-3) 0;
   transition: color var(--dur-fast) var(--ease-out);
 }
 
@@ -280,10 +280,10 @@ input, select, textarea {
 
 .nav-action-btn {
   position: relative;
-  width: 40px; height: 40px;
+  width: 48px; height: 48px;
   border-radius: var(--radius-full);
   display: grid; place-items: center;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
   color: var(--clr-text-secondary);
   transition: all var(--dur-fast) var(--ease-out);
 }
@@ -295,12 +295,12 @@ input, select, textarea {
 
 .nav-action-btn .badge {
   position: absolute;
-  top: 2px; right: 2px;
-  width: 18px; height: 18px;
+  top: 4px; right: 4px;
+  width: 20px; height: 20px;
   background: var(--clr-gold);
   color: var(--clr-text-inverse);
   border-radius: var(--radius-full);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   display: grid; place-items: center;
   transform: scale(0);
@@ -2818,15 +2818,15 @@ input, select, textarea {
   }
 
   .nav-action-btn {
-    width: 36px;
-    height: 36px;
-    font-size: var(--fs-base);
+    width: 40px;
+    height: 40px;
+    font-size: var(--fs-lg);
   }
 
   .nav-action-btn .badge {
-    width: 16px;
-    height: 16px;
-    font-size: 8px;
+    width: 18px;
+    height: 18px;
+    font-size: 9px;
   }
 
   /* Hero */
